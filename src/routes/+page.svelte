@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+</script>
+
 <div
 	class="gradient max-h-max bg-white"
 	style="background: linear-gradient(to top right, rgba(220, 220, 220, 0.4), rgba(255, 255, 255, 0.9)), url('/bg/noisy.png');"
@@ -35,6 +39,7 @@
 					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none"
 				/>
 				<button
+					on:click={() => goto('/template')}
 					class="flex flex-row items-center justify-center gap-2 rounded bg-accent px-8 py-2 text-[1.5rem] text-white"
 				>
 					Login <img src="/icons/arrow-right.svg" alt="Icon" class="h-6 w-6" />
