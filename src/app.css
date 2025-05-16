@@ -13,6 +13,14 @@
 	.input-hover-enabled:not(:focus):hover {
 		border-color: rgb(163 163 163);
 	}
+
+	/* Dark mode background gradient */
+	.dark .gradient {
+		background:
+			linear-gradient(to top right, rgba(60, 60, 60, 0.6), rgba(38, 38, 38, 1)),
+			url('/bg/dark-noisy.png') !important;
+	}
+
 	input::placeholder,
 	textarea::placeholder {
 		color: rgba(125, 125, 125);

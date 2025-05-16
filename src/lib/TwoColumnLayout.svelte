@@ -11,7 +11,7 @@
 
 	<!-- Interactive block - Full width on mobile -->
 	<div
-		class="animate-fade2 flex flex-none items-center justify-start bg-white p-8 sm:min-h-screen sm:w-[60%] sm:p-0"
+		class="animate-fade2 flex flex-none items-center justify-start p-8 sm:min-h-screen sm:w-[60%] sm:p-0"
 	>
 		<div class="animate-fade2 flex w-full max-w-full flex-col sm:ml-16 sm:w-[50%] sm:max-w-[600px]">
 			<slot name="interactive" />
