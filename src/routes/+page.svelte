@@ -50,7 +50,7 @@
 			<div class="text-[1.3rem] leading-7 text-neutral-700">
 				<p>
 					Wait, someone told me that I should never put my nsec in a web app, so doing this in
-					Nprofile is not so bad? Yes, <a href="#todo" class="underline">learn why</a>.
+					NPortal is not so bad? Yes, <a href="#todo" class="underline">learn why</a>.
 				</p>
 			</div>
 
