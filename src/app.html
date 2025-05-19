@@ -5,6 +5,39 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		%sveltekit.head%
+
+		<script>
+			// Inline script to set theme before any content renders
+			(function () {
+				function determineTheme() {
+					// First check for explicit user preference
+					savedTheme = localStorage.getItem('theme');
+					let value = '';
+					try {
+						const parsed = JSON.parse(savedTheme);
+						if (parsed.value === 'dark') {
+							return true;
+						} else {
+							return false;
+						}
+					} catch (e) {
+						return false;
+					}
+
+					// If no explicit preference, use system preference
+					const darkSetting = window.matchMedia('(prefers-color-scheme: dark)').matches;
+					localStorage.setItem('systemTheme', darkSetting ? 'dark' : 'light');
+					return darkSetting;
+				}
+
+				// Apply theme immediately
+				const isDark = determineTheme();
+				console.log('isDark', isDark);
+				if (isDark) {
+					document.documentElement.classList.add('dark');
+				}
+			})();
+		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover" class="text-base dark:bg-neutral-800">
 		<div style="display: contents">%sveltekit.body%</div>
