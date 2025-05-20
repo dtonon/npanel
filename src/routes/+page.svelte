@@ -1,5 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { checkForExtensionsDelayed } from '$lib//checkExtensions';
+
+	let extensionsPresent = false;
+	onMount(async () => {
+		// Wait 3 seconds for extensions to fully load
+		const hasExtensions = await checkForExtensionsDelayed(1000);
+		if (hasExtensions) {
+			extensionsPresent = true;
+			console.log('Extension detected');
+		}
+	});
 </script>
 
 <div class="dark:bg-neutral-800">
@@ -59,6 +71,16 @@
 					<p>
 						Wait, someone told me that I should never put my nsec in a web app, so doing this in
 						NPortal is not so bad? Exactly, <a href="#todo" class="underline">learn why</a>.
+					</p>
+					<p>
+						{#if extensionsPresent}
+							Anyway it seems <strong class="font-semibold"
+								>you have some extensions installed and active</strong
+							>, we suggest you to
+							<strong class="font-semibold text-accent"
+								>use an incognito session disabling all the extensions</strong
+							>.
+						{/if}
 					</p>
 				</div>
 
