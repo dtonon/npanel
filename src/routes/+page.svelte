@@ -4,9 +4,11 @@
 	import { checkForExtensionsDelayed } from '$lib//checkExtensions';
 	import { sk } from '$lib/store';
 	import { nip19 } from 'nostr-tools';
+	import { decrypt } from 'nostr-tools/nip49';
 
 	let extensionsPresent = false;
 	let loginStr = '';
+	let password = '';
 
 	onMount(async () => {
 		// Wait 3 seconds for extensions to fully load
@@ -22,17 +24,39 @@
 			alert('You need to enter your nsec to login');
 			return;
 		}
-		try {
-			const decoded = nip19.decode(loginStr);
-			if (decoded.type === 'nsec') {
-				$sk = decoded.data;
-				goto('/profile');
+
+		if (loginStr.startsWith('ncryptsec')) {
+			if (password === '') {
+				alert('You need to enter a password');
+				return false;
 			}
-		} catch (error) {
-			alert("The entered nsec doesn't seem to be valid, double check it and try again");
-			return false;
+			try {
+				const decoded = decrypt(loginStr, password);
+				$sk = decoded;
+				goto('/profile');
+			} catch (error) {
+				alert(
+					"The ncryptsec/password combination doesn't seem to be valid, double check it and try again"
+				);
+				return false;
+			}
+		} else {
+			try {
+				const decoded = nip19.decode(loginStr);
+				if (decoded.type === 'nsec') {
+					$sk = decoded.data;
+					goto('/profile');
+				} else {
+					console.log('decoded.type', decoded.type);
+				}
+			} catch (error) {
+				alert("The entered nsec doesn't seem to be valid, double check it and try again");
+				return false;
+			}
 		}
 	}
+
+	$: isNcryptsec = loginStr.toLowerCase().startsWith('ncryptsec');
 </script>
 
 <div class="dark:bg-neutral-800">
@@ -80,6 +104,15 @@
 						placeholder="nsec1....."
 						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 					/>
+					{#if isNcryptsec}
+						<input
+							type="text"
+							bind:value={password}
+							required
+							placeholder="Your password"
+							class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+						/>
+					{/if}
 					<button
 						on:click={() => login()}
 						class="flex flex-row items-center justify-center gap-2 rounded bg-accent px-8 py-2 text-[1.5rem] text-white"
