@@ -2,8 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { checkForExtensionsDelayed } from '$lib//checkExtensions';
+	import { sk } from '$lib/store';
+	import { nip19 } from 'nostr-tools';
 
 	let extensionsPresent = false;
+	let loginStr = '';
+
 	onMount(async () => {
 		// Wait 3 seconds for extensions to fully load
 		const hasExtensions = await checkForExtensionsDelayed(1000);
@@ -12,6 +16,23 @@
 			console.log('Extension detected');
 		}
 	});
+
+	function login() {
+		if (loginStr === '') {
+			alert('You need to enter your nsec to login');
+			return;
+		}
+		try {
+			const decoded = nip19.decode(loginStr);
+			if (decoded.type === 'nsec') {
+				$sk = decoded.data;
+				goto('/profile');
+			}
+		} catch (error) {
+			alert("The entered nsec doesn't seem to be valid, double check it and try again");
+			return false;
+		}
+	}
 </script>
 
 <div class="dark:bg-neutral-800">
@@ -47,19 +68,20 @@
 					<p>
 						This tool allows you to manage your Nostr profile, especially multi-signature bunkers.
 						<br />Because of the technical operation of multi-signature bunkers, you must use your
-						Nsec / Ncryptsec directly to manage them; you cannot use (for now) a browser extension.
+						Nsec directly to manage them; you cannot use (for now) a browser extension.
 					</p>
 				</div>
 
 				<div class="mb-6 flex flex-col gap-4 sm:flex-row">
 					<input
 						type="text"
+						bind:value={loginStr}
 						required
-						placeholder="nsec1.....  / ncryptsec1....."
+						placeholder="nsec1....."
 						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 					/>
 					<button
-						on:click={() => goto('/template')}
+						on:click={() => login()}
 						class="flex flex-row items-center justify-center gap-2 rounded bg-accent px-8 py-2 text-[1.5rem] text-white"
 					>
 						Login <img src="/icons/arrow-right.svg" alt="Icon" class="h-6 w-6" />

@@ -1,7 +1,17 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import ContinueButton from '$lib/ContinueButton.svelte';
 	import Menu from '$lib/Menu.svelte';
+	import { sk } from '$lib/store';
+	import { getPublicKey } from 'nostr-tools';
+	import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
+
+	let userProfile: NostrUser | null = null;
+	onMount(async () => {
+		const publicKeyHex = getPublicKey($sk);
+		userProfile = await loadNostrUser(publicKeyHex);
+	});
 </script>
 
 <!-- Menu component now handles its own positioning for mobile -->
@@ -17,7 +27,7 @@
 						MY NOSTR
 					</div>
 					<div
-						class="break-words text-[3.5rem] leading-[1em] text-black sm:h-auto sm:text-[3.5rem] dark:text-white"
+						class="break-words text-[3.5rem] leading-[1em] text-black dark:text-white sm:h-auto sm:text-[3.5rem]"
 						id="tw"
 					>
 						PROFILE
@@ -33,6 +43,9 @@
 
 	<div slot="interactive">
 		<div class="mb-12 text-neutral-700 dark:text-neutral-100">
+			{#if userProfile}
+				<p class="mb-6">Hello <strong>{userProfile.metadata.name}</strong></p>
+			{/if}
 			<p class="mb-6">
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam sollicitudin mollis sem eget
 				iaculis. In laoreet quam eu dolor sodales, et pharetra lectus gravida. Sed congue magna quis
