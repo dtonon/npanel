@@ -101,7 +101,8 @@
 						type="text"
 						bind:value={loginStr}
 						required
-						placeholder="nsec1....."
+						on:keydown={(e) => e.key === 'Enter' && !isNcryptsec && login()}
+						placeholder="nsec1... / ncryptsec1..."
 						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 					/>
 					{#if isNcryptsec}
@@ -109,6 +110,7 @@
 							type="text"
 							bind:value={password}
 							required
+							on:keydown={(e) => e.key === 'Enter' && login()}
 							placeholder="Your password"
 							class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						/>
