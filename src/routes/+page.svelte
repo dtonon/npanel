@@ -10,6 +10,12 @@
 	let loginStr = '';
 	let password = '';
 
+	let showPassword = false;
+
+	function togglePasswordVisibility() {
+		showPassword = !showPassword;
+	}
+
 	onMount(async () => {
 		// Wait 3 seconds for extensions to fully load
 		const hasExtensions = await checkForExtensionsDelayed(1000);
@@ -96,6 +102,14 @@
 					</p>
 				</div>
 
+				<script>
+					let showPassword = false;
+
+					function togglePasswordVisibility() {
+						showPassword = !showPassword;
+					}
+				</script>
+
 				<div class="mb-6 flex flex-col gap-4 sm:flex-row">
 					<input
 						type="text"
@@ -106,14 +120,71 @@
 						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 					/>
 					{#if isNcryptsec}
-						<input
-							type="text"
-							bind:value={password}
-							required
-							on:keydown={(e) => e.key === 'Enter' && login()}
-							placeholder="Your password"
-							class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-						/>
+						<div class="relative w-full">
+							{#if showPassword}
+								<input
+									type="text"
+									bind:value={password}
+									required
+									on:keydown={(e) => e.key === 'Enter' && login()}
+									placeholder="Your password"
+									class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+								/>
+							{:else}
+								<input
+									type="password"
+									bind:value={password}
+									required
+									on:keydown={(e) => e.key === 'Enter' && login()}
+									placeholder="Your password"
+									class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+								/>
+							{/if}
+							<button
+								type="button"
+								on:click={togglePasswordVisibility}
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+							>
+								{#if showPassword}
+									<!-- Eye with strike-through when password is visible -->
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="opacity-50"
+									>
+										<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+										<path
+											d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+										/>
+										<path
+											d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+										/>
+										<line x1="2" y1="2" x2="22" y2="22" />
+									</svg>
+								{:else}
+									<!-- Regular eye when password is hidden -->
+									<svg
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									>
+										<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+										<circle cx="12" cy="12" r="3" />
+									</svg>
+								{/if}
+							</button>
+						</div>
 					{/if}
 					<button
 						on:click={() => login()}
