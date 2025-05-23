@@ -1,45 +1,14 @@
 <script lang="ts">
-	import { theme } from '$lib/store';
-	import { browser } from '$app/environment';
+	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 
-	let systemTheme = 'light';
-	let mediaQuery: MediaQueryList;
-
-	if (browser) {
-		mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-		systemTheme = mediaQuery.matches ? 'dark' : 'light';
-
-		// Initialize theme to system preference if not set
-		if (!$theme) {
-			$theme = systemTheme;
-		}
-
-		// Listen for system theme changes
-		mediaQuery.addEventListener('change', (e) => {
-			systemTheme = e.matches ? 'dark' : 'light';
-			// If theme is synced with system, update it
-			if ($theme === (systemTheme === 'dark' ? 'light' : 'dark')) {
-				$theme = systemTheme;
-			}
-		});
-	}
-
-	function toggleTheme() {
-		if ($theme === systemTheme) {
-			// If synced with system, switch to opposite
-			$theme = systemTheme === 'dark' ? 'light' : 'dark';
-		} else {
-			// If not synced, go back to system theme
-			$theme = systemTheme;
-		}
-	}
+	$: effectiveTheme = getEffectiveTheme($theme);
 </script>
 
 <button
 	on:click={toggleTheme}
 	class="flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
 >
-	{#if $theme === 'dark'}
+	{#if effectiveTheme === 'dark'}
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			width="20"

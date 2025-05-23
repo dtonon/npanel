@@ -1,9 +1,8 @@
 import { writable, type Writable } from 'svelte/store';
-export const theme = createLocalWritable('theme', ''); // Empty = system
 export const sk = createSessionWritable<Uint8Array>('sk', new Uint8Array());
 
 // Utility function to persist values in localStorage
-function createLocalWritable<T>(label: string, initialValue: T): Writable<T> {
+export function createLocalWritable<T>(label: string, initialValue: T): Writable<T> {
 	const isBrowser = typeof window !== 'undefined';
 	let data = initialValue;
 	if (isBrowser) {

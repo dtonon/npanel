@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
+	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
+
+	$: effectiveTheme = getEffectiveTheme($theme);
 
 	const menuItems = [
 		{ id: 'profile', label: 'Profile', path: '/profile' },
@@ -63,7 +66,7 @@
 <!-- Mobile full-screen menu -->
 {#if showMobileMenu}
 	<div
-		class="fixed inset-0 z-40 flex items-center justify-center bg-white sm:hidden dark:bg-neutral-800"
+		class="fixed inset-0 z-40 flex items-center justify-center bg-white dark:bg-neutral-800 sm:hidden"
 		transition:fade={{ duration: 200 }}
 	>
 		<div
@@ -87,12 +90,60 @@
 			>
 				Logout
 			</button>
+			<div></div>
+			<!-- Theme toggle button for mobile -->
+			<button
+				on:click={() => {
+					toggleTheme();
+					showMobileMenu = false;
+				}}
+				class="flex items-center gap-3 text-3xl font-medium text-neutral-700 transition-colors hover:text-accent dark:text-neutral-100"
+				aria-label="Toggle theme"
+			>
+				{#if effectiveTheme === 'dark'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="32"
+						height="32"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+					</svg>
+				{:else}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="32"
+						height="32"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<circle cx="12" cy="12" r="5" />
+						<line x1="12" y1="1" x2="12" y2="3" />
+						<line x1="12" y1="21" x2="12" y2="23" />
+						<line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+						<line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+						<line x1="1" y1="12" x2="3" y2="12" />
+						<line x1="21" y1="12" x2="23" y2="12" />
+						<line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+						<line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+					</svg>
+				{/if}
+			</button>
 		</div>
 	</div>
 {/if}
 
 <!-- Desktop menu - hidden on mobile -->
-<div class="hidden leading-5 text-neutral-700 sm:block sm:w-[90%] dark:text-neutral-100">
+<div class="hidden leading-5 text-neutral-700 dark:text-neutral-100 sm:block sm:w-[90%]">
 	<!-- menu -->
 	<div class="">
 		{#each menuItems as item}

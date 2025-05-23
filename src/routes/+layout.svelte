@@ -1,14 +1,19 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount, onDestroy } from 'svelte';
+	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
-	import { theme } from '$lib/store';
+	import { theme } from '$lib/theme';
 	import ThemeSwitcher from '$lib/ThemeSwitcher.svelte';
 
 	let mediaQuery: MediaQueryList | null = null;
 	let systemTheme: string | null = null;
 
+	let isMobile = false;
+
 	$: updateTheme($theme);
+	$: isHomepage = $page.url.pathname === '/';
+	$: showThemeSwitcher = !isMobile || (isMobile && isHomepage);
 
 	onMount(async () => {
 		if (browser) {
@@ -24,6 +29,17 @@
 		}
 	});
 
+	onMount(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth <= 768; // or your mobile breakpoint
+		};
+
+		checkMobile();
+		window.addEventListener('resize', checkMobile);
+
+		return () => window.removeEventListener('resize', checkMobile);
+	});
+
 	onDestroy(() => {
 		if (browser) {
 			window.removeEventListener('message', handleThemeUpdate);
@@ -34,7 +50,7 @@
 		if (!browser) return;
 
 		const themeToApply =
-			preferredTheme === 'system'
+			preferredTheme === 'system' || !preferredTheme
 				? systemTheme || (mediaQuery?.matches ? 'dark' : 'light')
 				: preferredTheme;
 
@@ -59,8 +75,10 @@
 	}
 </script>
 
-<div class="absolute right-4 top-4 z-50 flex items-center gap-3">
-	<ThemeSwitcher />
-</div>
+{#if showThemeSwitcher}
+	<div class="absolute right-4 top-4 z-50 flex items-center gap-3">
+		<ThemeSwitcher />
+	</div>
+{/if}
 
 <slot />
