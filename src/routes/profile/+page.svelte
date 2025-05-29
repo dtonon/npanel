@@ -2,16 +2,149 @@
 	import { onMount } from 'svelte';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import ContinueButton from '$lib/ContinueButton.svelte';
+	import LoadingBar from '$lib/LoadingBar.svelte';
+	import { isMobile } from '$lib/mobile';
 	import Menu from '$lib/Menu.svelte';
 	import { sk } from '$lib/store';
 	import { getPublicKey } from 'nostr-tools';
 	import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
+	import { publishProfile } from '$lib/actions';
+	import { utf8Encoder } from '@nostr/tools/utils';
+	import { base64 } from '@scure/base';
+	import { bytesToHex } from '@noble/hashes/utils';
+	import { sha256 } from '@noble/hashes/sha256';
+	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
+	import { indexRelays } from '$lib/actions';
 
 	let userProfile: NostrUser | null = null;
+
+	let name = '';
+	let picture = '';
+	let about = '';
+	let website = '';
+	let nip05 = '';
+	let lnAddress = '';
+	let picturePreview: string | null = null;
+	let activationProgress = 0;
+
+	type NostrUserRequest = {
+		pubkey: string;
+		relays?: string[];
+		forceUpdate?: boolean;
+	};
+
 	onMount(async () => {
 		const publicKeyHex = getPublicKey($sk);
-		userProfile = await loadNostrUser(publicKeyHex);
+
+		const userRequest: NostrUserRequest = {
+			pubkey: publicKeyHex,
+			relays: indexRelays,
+			forceUpdate: true
+		};
+
+		userProfile = await loadNostrUser(userRequest);
+		name = userProfile.shortName;
+		picture = userProfile.metadata.picture;
+		about = userProfile.metadata.about;
+		website = userProfile.metadata.website;
+		nip05 = userProfile.metadata.nip05;
+		lnAddress = userProfile.metadata.lud16;
 	});
+
+	function triggerFileInput() {
+		document.getElementById('image')?.click();
+	}
+
+	async function calculateFileHash(file: Blob): Promise<string> {
+		return bytesToHex(sha256(new Uint8Array(await file.arrayBuffer())));
+	}
+
+	function previewImage(event: Event & { currentTarget: HTMLInputElement }) {
+		const file = event.currentTarget.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = () => {
+				picturePreview = reader.result as string;
+			};
+			reader.readAsDataURL(file);
+		}
+	}
+
+	async function blossomAuth(file: File) {
+		// Calculate the hash of the image
+		let imageHash = await calculateFileHash(file);
+
+		// Create the event and sign it
+		let eventTemplate: EventTemplate = {
+			kind: 24242,
+			created_at: Math.floor(Date.now() / 1000),
+			tags: [
+				['t', 'upload'],
+				['x', imageHash],
+				['expiration', String(Math.floor(Date.now() / 1000) + 86400)]
+			],
+			content: 'Upload profile pic'
+		};
+		let signedEvent = finalizeEvent(eventTemplate, $sk);
+
+		// Return a base64 of the json event
+		return base64.encode(utf8Encoder.encode(JSON.stringify(signedEvent)));
+	}
+
+	async function uploadImage(file: File) {
+		let auth = await blossomAuth(file);
+		const arrayBuffer = await file.arrayBuffer();
+
+		const response = await fetch('https://cdn.nostrcheck.me/upload', {
+			method: 'PUT',
+			headers: {
+				Authorization: `Nostr ${auth}`
+			},
+			body: arrayBuffer
+		});
+
+		if (response.ok) {
+			const data = await response.json();
+			activationProgress = 100;
+			return data;
+		} else {
+			console.error('Upload failed:', response.statusText);
+			alert('Image upload failed. Please try again');
+		}
+	}
+
+	async function navigateContinue() {
+		if (!name) {
+			alert('Please enter a name, bio and website are optional');
+			return;
+		}
+
+		const file = (document.getElementById('image') as HTMLInputElement).files?.[0];
+
+		if (file) {
+			let intv = setInterval(() => {
+				if (activationProgress < 95) activationProgress = activationProgress + 10;
+			}, 500);
+
+			try {
+				let data = await uploadImage(file); // Wait for the upload to complete
+				picture = data.url;
+			} catch (error) {
+				console.error('Error during upload:', error);
+			}
+			clearInterval(intv);
+		}
+
+		publishProfile($sk, {
+			name: name,
+			about: about,
+			picture: picture,
+			website:
+				website.trim() === '' ? '' : website.startsWith('http') ? website : `https://${website}`
+		});
+
+		// TODO: Show confirmation
+	}
 </script>
 
 <!-- Menu component now handles its own positioning for mobile -->
@@ -42,26 +175,130 @@
 	</div>
 
 	<div slot="interactive">
-		<div class="mb-12 text-neutral-700 dark:text-neutral-100">
-			{#if userProfile}
-				<p class="mb-6">Hello <strong>{userProfile.metadata.name}</strong></p>
-			{/if}
-			<p class="mb-6">
-				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam sollicitudin mollis sem eget
-				iaculis. In laoreet quam eu dolor sodales, et pharetra lectus gravida. Sed congue magna quis
-				mauris tincidunt varius. Pellentesque ut ipsum commodo, aliquet dolor rhoncus, vehicula
-				urna. Fusce pretium arcu vitae quam faucibus, a eleifend leo vestibulum.
-			</p>
-			<p>
-				Nunc erat est, aliquam non mi quis, varius viverra leo. Nunc facilisis mi a massa semper
-				auctor. Nulla facilisi. Nullam vitae neque felis. Vestibulum vehicula vulputate luctus.
-				Praesent quam mauris, tristique et libero vel, volutpat rutrum dui. Nulla posuere ligula sit
-				amet metus lacinia ullamcorper. Phasellus mollis augue non velit efficitur, eu fermentum
-				mauris congue.
-			</p>
+		<div class="mb-6 flex items-end justify-end">
+			<button on:click={triggerFileInput} class="text-xl text-neutral-400 dark:text-neutral-500"
+				>Your image</button
+			>
+			<div
+				class="-mr-8 ml-2 mt-2 h-1 w-20 border-t-2 border-neutral-300 dark:border-neutral-600"
+			></div>
+			<button
+				on:click={triggerFileInput}
+				class="input-hover-enabled h-24 w-24 rounded-full border-2 border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800"
+			>
+				<!-- svelte-ignore a11y-img-redundant-alt -->
+				{#if picturePreview || picture}
+					<img
+						src={picturePreview || picture}
+						alt="Profile Picture"
+						class="h-full w-full rounded-full object-cover"
+					/>
+				{:else}
+					<img
+						src="/icons/pfp.svg"
+						alt="Default Profile Picture"
+						class="h-full w-full rounded-full object-cover"
+					/>
+				{/if}
+			</button>
 		</div>
-		<div class="flex justify-center sm:justify-end">
-			<ContinueButton text="Continue" />
+		<div>
+			<!-- File input for image upload -->
+			<input type="file" id="image" accept="image/*" on:change={previewImage} class="hidden" />
+			<!-- svelte-ignore a11y-autofocus -->
+			<div class="mb-1 flex items-end justify-between">
+				{#if name !== '' && name !== undefined}<label
+						for="name"
+						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+						>Your (nick)name</label
+					>{:else}<div></div>{/if}
+				<div class="mr-4 text-right text-xs uppercase text-neutral-500 dark:text-neutral-400">
+					Required
+				</div>
+			</div>
+			<!-- svelte-ignore a11y-autofocus -->
+			<input
+				id="name"
+				type="text"
+				placeholder="Your (nick)name"
+				bind:value={name}
+				autofocus={!isMobile}
+				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			/>
+			<div class="mb-1 flex items-end justify-between">
+				{#if about !== '' && about !== undefined}<label
+						for="about"
+						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+						>Something about you</label
+					>{:else}<div></div>{/if}
+				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+					Optional
+				</div>
+			</div>
+			<textarea
+				id="about"
+				placeholder="Something about you"
+				bind:value={about}
+				class="input-hover-enabled mb-4 block w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			></textarea>
+			<div class="mb-1 flex items-end justify-between">
+				{#if website !== '' && website !== undefined}<label
+						for="website"
+						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">Website</label
+					>{:else}<div></div>{/if}
+				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+					Optional
+				</div>
+			</div>
+			<input
+				type="text"
+				placeholder="Website"
+				bind:value={website}
+				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			/>
+			<div class="mb-1 flex items-end justify-between">
+				{#if nip05 !== '' && nip05 !== undefined}<label
+						for="nip05"
+						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+						>NIP05 Address</label
+					>{:else}<div></div>{/if}
+				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+					Optional
+				</div>
+			</div>
+			<input
+				type="text"
+				placeholder="LN Address"
+				bind:value={nip05}
+				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			/>
+			<div class="mb-1 flex items-end justify-between">
+				{#if lnAddress !== '' && lnAddress !== undefined}<label
+						for="lnaddress"
+						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">LN Address</label
+					>{:else}<div></div>{/if}
+				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+					Optional
+				</div>
+			</div>
+			<input
+				type="text"
+				placeholder="LN Address"
+				bind:value={lnAddress}
+				class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			/>
+			{#if activationProgress > 0 && activationProgress < 100}
+				<div class="mt-6">
+					<LoadingBar progress={activationProgress} />
+				</div>
+			{/if}
+		</div>
+		<div class="mt-16 flex justify-center sm:justify-end">
+			<ContinueButton
+				onClick={navigateContinue}
+				disabled={(activationProgress > 0 && activationProgress < 100) || !name}
+				text={activationProgress > 0 && activationProgress < 100 ? 'Uploading...' : 'Save'}
+			/>
 		</div>
 	</div>
 </TwoColumnLayout>

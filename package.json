@@ -34,7 +34,8 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@^0.0.28",
-		"nostr-tools": "^2.14.1"
+		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@^0.0.31",
+		"@nostr/tools": "npm:@jsr/nostr__tools@^2.15.0",
+		"nostr-tools": "^2.14.3"
 	}
 }
