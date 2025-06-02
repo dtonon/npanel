@@ -3,6 +3,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 	import { picture } from '$lib/store';
+	import { clearSession } from '$lib/actions';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
@@ -23,7 +24,7 @@
 	}
 
 	function handleLogout() {
-		// TODO - Clear user stores, etc.
+		clearSession();
 		goto('/');
 	}
 

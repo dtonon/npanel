@@ -53,3 +53,7 @@ export async function publishProfile(sk: Uint8Array, metadata: any) {
 	pool.publish(indexRelays, signedEvent);
 	console.log('Published ' + JSON.stringify(signedEvent));
 }
+
+export async function clearSession() {
+	sessionStorage.clear();
+}

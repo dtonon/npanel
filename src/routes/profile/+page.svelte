@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import SaveButton from '$lib/SaveButton.svelte';
 	import LoadingBar from '$lib/LoadingBar.svelte';
@@ -26,6 +27,10 @@
 	let isImageDeleted = false;
 
 	onMount(async () => {
+		if ($sk.length === 0) {
+			goto('/');
+		}
+
 		const publicKeyHex = getPublicKey($sk);
 
 		const userProfile = await fetchProfile(publicKeyHex);
