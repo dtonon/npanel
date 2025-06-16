@@ -7,16 +7,12 @@
 	import Menu from '$lib/Menu.svelte';
 	import { sk } from '$lib/store';
 	import { getPublicKey } from 'nostr-tools';
-	import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
-	import { publishProfile } from '$lib/actions';
+	import { fetchProfile, publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
 	import { base64 } from '@scure/base';
 	import { bytesToHex } from '@noble/hashes/utils';
 	import { sha256 } from '@noble/hashes/sha256';
 	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
-	import { indexRelays } from '$lib/actions';
-
-	let userProfile: NostrUser | null = null;
 
 	let name = '';
 	let picture = '';
@@ -27,28 +23,19 @@
 	let picturePreview: string | null = null;
 	let activationProgress = 0;
 
-	type NostrUserRequest = {
-		pubkey: string;
-		relays?: string[];
-		forceUpdate?: boolean;
-	};
-
 	onMount(async () => {
 		const publicKeyHex = getPublicKey($sk);
 
-		const userRequest: NostrUserRequest = {
-			pubkey: publicKeyHex,
-			relays: indexRelays,
-			forceUpdate: true
-		};
-
-		userProfile = await loadNostrUser(userRequest);
-		name = userProfile.shortName;
-		picture = userProfile.metadata.picture;
-		about = userProfile.metadata.about;
-		website = userProfile.metadata.website;
-		nip05 = userProfile.metadata.nip05;
-		lud16 = userProfile.metadata.lud16;
+		const userProfile = await fetchProfile(publicKeyHex);
+		console.log('userProfile', userProfile);
+		if (userProfile) {
+			name = userProfile.name;
+			picture = userProfile.picture;
+			about = userProfile.about;
+			website = userProfile.website;
+			nip05 = userProfile.nip05;
+			lud16 = userProfile.lud16;
+		}
 	});
 
 	function triggerFileInput() {
@@ -113,7 +100,7 @@
 		}
 	}
 
-	async function navigateContinue() {
+	async function saveProfile() {
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
 			return;
@@ -297,7 +284,7 @@
 		</div>
 		<div class="mt-16 flex justify-center sm:justify-end">
 			<ContinueButton
-				onClick={navigateContinue}
+				onClick={saveProfile}
 				disabled={(activationProgress > 0 && activationProgress < 100) || !name}
 				text={activationProgress > 0 && activationProgress < 100 ? 'Uploading...' : 'Save'}
 			/>
