@@ -23,7 +23,7 @@
 	let about = '';
 	let website = '';
 	let nip05 = '';
-	let lnAddress = '';
+	let lud16 = '';
 	let picturePreview: string | null = null;
 	let activationProgress = 0;
 
@@ -48,7 +48,7 @@
 		about = userProfile.metadata.about;
 		website = userProfile.metadata.website;
 		nip05 = userProfile.metadata.nip05;
-		lnAddress = userProfile.metadata.lud16;
+		lud16 = userProfile.metadata.lud16;
 	});
 
 	function triggerFileInput() {
@@ -140,7 +140,9 @@
 			about: about,
 			picture: picture,
 			website:
-				website.trim() === '' ? '' : website.startsWith('http') ? website : `https://${website}`
+				website.trim() === '' ? '' : website.startsWith('http') ? website : `https://${website}`,
+			nip05: nip05,
+			lud16: lud16
 		});
 
 		// TODO: Show confirmation
@@ -268,13 +270,13 @@
 			</div>
 			<input
 				type="text"
-				placeholder="LN Address"
+				placeholder="NIP05 Address"
 				bind:value={nip05}
 				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 			/>
 			<div class="mb-1 flex items-end justify-between">
-				{#if lnAddress !== '' && lnAddress !== undefined}<label
-						for="lnaddress"
+				{#if lud16 !== '' && lud16 !== undefined}<label
+						for="lud16"
 						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">LN Address</label
 					>{:else}<div></div>{/if}
 				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
@@ -284,7 +286,7 @@
 			<input
 				type="text"
 				placeholder="LN Address"
-				bind:value={lnAddress}
+				bind:value={lud16}
 				class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 			/>
 			{#if activationProgress > 0 && activationProgress < 100}
