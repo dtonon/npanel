@@ -103,12 +103,28 @@
 
 	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+	function isValidEmail(email: string) {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
+	}
+
 	async function saveProfile() {
-		saveProgress = 1;
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
 			return;
 		}
+
+		if (nip05 && !isValidEmail(nip05)) {
+			alert('Please enter valid NIP05 address');
+			return;
+		}
+
+		if (lud16 && !isValidEmail(lud16)) {
+			alert('Please enter valid LN address');
+			return;
+		}
+
+		saveProgress = 1;
 
 		const fileInput = document.getElementById('image') as HTMLInputElement;
 
