@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
+	import { picture } from '$lib/store';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
@@ -169,7 +170,9 @@
 			role="button"
 			tabindex="0"
 		>
-			Logout <span class="h-5 w-5 rounded-full bg-[url(/icons/pfp.svg)] bg-cover"></span>
+			Logout <span
+				class="h-5 w-5 rounded-full bg-[url({$picture ? $picture : '/icons/pfp.svg'})] bg-cover"
+			></span>
 		</div>
 	</div>
 </div>

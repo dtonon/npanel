@@ -1,5 +1,7 @@
 import { writable, type Writable } from 'svelte/store';
+
 export const sk = createSessionWritable<Uint8Array>('sk', new Uint8Array());
+export const picture = createSessionWritable('picture', '');
 
 // Utility function to persist values in localStorage
 export function createLocalWritable<T>(label: string, initialValue: T): Writable<T> {

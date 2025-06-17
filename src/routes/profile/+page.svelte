@@ -5,7 +5,7 @@
 	import LoadingBar from '$lib/LoadingBar.svelte';
 	import { isMobile } from '$lib/mobile';
 	import Menu from '$lib/Menu.svelte';
-	import { sk } from '$lib/store';
+	import { sk, picture } from '$lib/store';
 	import { getPublicKey } from 'nostr-tools';
 	import { fetchProfile, publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
@@ -15,7 +15,6 @@
 	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
 
 	let name = '';
-	let picture = '';
 	let about = '';
 	let website = '';
 	let nip05 = '';
@@ -31,7 +30,7 @@
 		console.log('userProfile', userProfile);
 		if (userProfile) {
 			name = userProfile.name;
-			picture = userProfile.picture;
+			$picture = userProfile.picture;
 			about = userProfile.about;
 			website = userProfile.website;
 			nip05 = userProfile.nip05;
@@ -138,7 +137,7 @@
 			try {
 				let data = await uploadImage(fileInput.files?.[0]); // Wait for the upload to complete
 				fileInput.value = '';
-				picture = data.url;
+				$picture = data.url;
 			} catch (error) {
 				console.error('Error during upload:', error);
 			}
@@ -149,7 +148,7 @@
 		publishProfile($sk, {
 			name: name,
 			about: about,
-			picture: picture,
+			picture: $picture,
 			website:
 				website.trim() === '' ? '' : website.startsWith('http') ? website : `https://${website}`,
 			nip05: nip05,
@@ -201,9 +200,9 @@
 				class="input-hover-enabled h-24 w-24 rounded-full border-2 border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800"
 			>
 				<!-- svelte-ignore a11y-img-redundant-alt -->
-				{#if picturePreview || picture}
+				{#if picturePreview || $picture}
 					<img
-						src={picturePreview || picture}
+						src={picturePreview || $picture}
 						alt="Profile Picture"
 						class="h-full w-full rounded-full object-cover"
 					/>
