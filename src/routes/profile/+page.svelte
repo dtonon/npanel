@@ -101,7 +101,7 @@
 		}
 	}
 
-	const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 	async function saveProfile() {
 		saveProgress = 1;
@@ -140,8 +140,7 @@
 			lud16: lud16
 		});
 
-		await delay(500);
-
+		await delay(100);
 		saveProgress = 100;
 	}
 </script>
@@ -295,8 +294,10 @@
 		<div class="mt-16 flex justify-center sm:justify-end">
 			<SaveButton
 				onClick={saveProfile}
-				disabled={(saveProgress > 0 && saveProgress < 100) || !name}
+				disabled={!name}
 				text={saveProgress > 0 && saveProgress < 100 ? 'Saving...' : 'Save'}
+				okText="Saved"
+				isSaving={saveProgress > 0 && saveProgress < 100}
 			/>
 		</div>
 	</div>
