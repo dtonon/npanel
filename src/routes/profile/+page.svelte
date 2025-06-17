@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
-	import ContinueButton from '$lib/ContinueButton.svelte';
+	import SaveButton from '$lib/SaveButton.svelte';
 	import LoadingBar from '$lib/LoadingBar.svelte';
 	import { isMobile } from '$lib/mobile';
 	import Menu from '$lib/Menu.svelte';
@@ -21,7 +21,8 @@
 	let nip05 = '';
 	let lud16 = '';
 	let picturePreview: string | null = null;
-	let activationProgress = 0;
+	let uploading = false;
+	let saveProgress = 0;
 
 	onMount(async () => {
 		const publicKeyHex = getPublicKey($sk);
@@ -92,7 +93,7 @@
 
 		if (response.ok) {
 			const data = await response.json();
-			activationProgress = 100;
+			saveProgress = 100;
 			return data;
 		} else {
 			console.error('Upload failed:', response.statusText);
@@ -100,26 +101,33 @@
 		}
 	}
 
+	const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
 	async function saveProfile() {
+		saveProgress = 1;
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
 			return;
 		}
 
-		const file = (document.getElementById('image') as HTMLInputElement).files?.[0];
+		const fileInput = document.getElementById('image') as HTMLInputElement;
 
-		if (file) {
+		if (fileInput.files?.[0]) {
+			console.log('Uploading');
+			uploading = true;
 			let intv = setInterval(() => {
-				if (activationProgress < 95) activationProgress = activationProgress + 10;
+				if (saveProgress < 95) saveProgress = saveProgress + 10;
 			}, 500);
 
 			try {
-				let data = await uploadImage(file); // Wait for the upload to complete
+				let data = await uploadImage(fileInput.files?.[0]); // Wait for the upload to complete
+				fileInput.value = '';
 				picture = data.url;
 			} catch (error) {
 				console.error('Error during upload:', error);
 			}
 			clearInterval(intv);
+			uploading = false;
 		}
 
 		publishProfile($sk, {
@@ -132,7 +140,9 @@
 			lud16: lud16
 		});
 
-		// TODO: Show confirmation
+		await delay(500);
+
+		saveProgress = 100;
 	}
 </script>
 
@@ -276,17 +286,17 @@
 				bind:value={lud16}
 				class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 			/>
-			{#if activationProgress > 0 && activationProgress < 100}
+			{#if uploading && saveProgress > 0 && saveProgress < 100}
 				<div class="mt-6">
-					<LoadingBar progress={activationProgress} />
+					<LoadingBar progress={saveProgress} />
 				</div>
 			{/if}
 		</div>
 		<div class="mt-16 flex justify-center sm:justify-end">
-			<ContinueButton
+			<SaveButton
 				onClick={saveProfile}
-				disabled={(activationProgress > 0 && activationProgress < 100) || !name}
-				text={activationProgress > 0 && activationProgress < 100 ? 'Uploading...' : 'Save'}
+				disabled={(saveProgress > 0 && saveProgress < 100) || !name}
+				text={saveProgress > 0 && saveProgress < 100 ? 'Saving...' : 'Save'}
 			/>
 		</div>
 	</div>
