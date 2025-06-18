@@ -1,5 +1,5 @@
 dev:
-  npm run dev
+  npm run dev -- --force
 
 build:
   npm run build
