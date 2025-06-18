@@ -172,7 +172,8 @@
 			tabindex="0"
 		>
 			Logout <span
-				class="h-5 w-5 rounded-full bg-[url({$picture ? $picture : '/icons/pfp.svg'})] bg-cover"
+				class="h-5 w-5 rounded-full bg-cover"
+				style="background-image: url({$picture || '/icons/pfp.svg'})"
 			></span>
 		</div>
 	</div>
