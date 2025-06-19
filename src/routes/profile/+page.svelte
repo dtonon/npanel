@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { beforeNavigate } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import SaveButton from '$lib/SaveButton.svelte';
 	import LoadingBar from '$lib/LoadingBar.svelte';
@@ -43,6 +45,33 @@
 		picturePreview !== null ||
 		isImageDeleted;
 
+	// Block navigation if form is modified
+	beforeNavigate(({ cancel }) => {
+		if (isFormModified && saveProgress === 0) {
+			if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+				cancel();
+			}
+		}
+	});
+
+	// Block page unload/refresh if form is modified
+	function handleBeforeUnload(event: BeforeUnloadEvent) {
+		if (isFormModified && saveProgress === 0) {
+			event.preventDefault();
+			// Most modern browsers ignore custom messages and show their own
+			event.returnValue = '';
+		}
+	}
+
+	// Setup and cleanup browser-only event listeners
+	$: if (browser) {
+		if (isFormModified) {
+			window.addEventListener('beforeunload', handleBeforeUnload);
+		} else {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+		}
+	}
+
 	onMount(async () => {
 		if ($sk.length === 0) {
 			goto('/');
@@ -67,6 +96,14 @@
 			originalWebsite = website;
 			originalNip05 = nip05;
 			originalLud16 = lud16;
+		}
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+	});
+
+	onDestroy(() => {
+		if (browser) {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
 		}
 	});
 
