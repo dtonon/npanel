@@ -26,6 +26,23 @@
 	let originalPicture: string = '';
 	let isImageDeleted = false;
 
+	// Original values to track changes
+	let originalName = '';
+	let originalAbout = '';
+	let originalWebsite = '';
+	let originalNip05 = '';
+	let originalLud16 = '';
+
+	// Reactive variable to track if form has been modified
+	$: isFormModified =
+		name !== originalName ||
+		about !== originalAbout ||
+		website !== originalWebsite ||
+		nip05 !== originalNip05 ||
+		lud16 !== originalLud16 ||
+		picturePreview !== null ||
+		isImageDeleted;
+
 	onMount(async () => {
 		if ($sk.length === 0) {
 			goto('/');
@@ -36,13 +53,20 @@
 		const userProfile = await fetchProfile(publicKeyHex);
 		console.log('userProfile', userProfile);
 		if (userProfile) {
-			name = userProfile.name;
+			name = userProfile.name || '';
 			$picture = userProfile.picture || '';
 			originalPicture = userProfile.picture || '';
-			about = userProfile.about;
-			website = userProfile.website;
-			nip05 = userProfile.nip05;
-			lud16 = userProfile.lud16;
+			about = userProfile.about || '';
+			website = userProfile.website || '';
+			nip05 = userProfile.nip05 || '';
+			lud16 = userProfile.lud16 || '';
+
+			// Store original values
+			originalName = name;
+			originalAbout = about;
+			originalWebsite = website;
+			originalNip05 = nip05;
+			originalLud16 = lud16;
 		}
 	});
 
@@ -239,6 +263,14 @@
 		await delay(100);
 		saveProgress = 100;
 		isImageDeleted = false;
+
+		// Update original values after successful save
+		originalName = name;
+		originalAbout = about;
+		originalWebsite = website;
+		originalNip05 = nip05;
+		originalLud16 = lud16;
+		picturePreview = null;
 	}
 </script>
 
@@ -428,6 +460,7 @@
 				text={saveProgress > 0 && saveProgress < 100 ? 'Saving...' : 'Save'}
 				okText="Saved"
 				isSaving={saveProgress > 0 && saveProgress < 100}
+				isModified={isFormModified}
 			/>
 		</div>
 	</div>
