@@ -35,6 +35,7 @@
 	let originalNip05 = '';
 	let originalLud16 = '';
 	let nip05ValidStatus: 'valid' | 'invalid' | 'loading' | null = null;
+	let nip05ValidationTimeout: number;
 
 	// Reactive variable to track if form has been modified
 	$: isFormModified =
@@ -294,6 +295,11 @@
 		nip05ValidStatus = isValid ? 'valid' : 'invalid';
 	}
 
+	function debouncedNip05Validation() {
+		clearTimeout(nip05ValidationTimeout);
+		nip05ValidationTimeout = setTimeout(checkNip05Validation, 500);
+	}
+
 	async function saveProfile() {
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
@@ -302,6 +308,18 @@
 
 		if (nip05 && !isValidEmail(nip05)) {
 			alert('Please enter valid NIP05 address');
+			return;
+		}
+
+		if (nip05 && nip05ValidStatus === 'loading') {
+			alert('Please wait for NIP05 validation to complete.');
+			return;
+		}
+
+		if (nip05 && nip05ValidStatus === 'invalid') {
+			alert(
+				'NIP05 address is invalid, please verify it matches your public key.\nThe profile has not been saved!'
+			);
 			return;
 		}
 
@@ -517,6 +535,7 @@
 					type="text"
 					placeholder="NIP05 Address"
 					bind:value={nip05}
+					on:input={debouncedNip05Validation}
 					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 				/>
 				{#if nip05.trim() && nip05ValidStatus}
