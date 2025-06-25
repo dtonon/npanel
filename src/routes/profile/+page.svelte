@@ -36,6 +36,8 @@
 	let originalLud16 = '';
 	let nip05ValidStatus: 'valid' | 'invalid' | 'loading' | null = null;
 	let nip05ValidationTimeout: number;
+	let lud16ValidStatus: 'valid' | 'invalid' | 'loading' | null = null;
+	let lud16ValidationTimeout: number;
 
 	// Reactive variable to track if form has been modified
 	$: isFormModified =
@@ -102,6 +104,11 @@
 			// Validate NIP-05 if present
 			if (nip05) {
 				checkNip05Validation();
+			}
+
+			// Validate LUD-16 if present
+			if (lud16) {
+				checkLud16Validation();
 			}
 		}
 
@@ -300,6 +307,45 @@
 		nip05ValidationTimeout = setTimeout(checkNip05Validation, 500);
 	}
 
+	async function validateLud16(lud16Address: string): Promise<boolean> {
+		if (!lud16Address || !isValidEmail(lud16Address)) {
+			return false;
+		}
+
+		try {
+			const [localPart, domain] = lud16Address.split('@');
+			const url = `https://${domain}/.well-known/lnurlp/${encodeURIComponent(localPart)}`;
+
+			const response = await fetch(url);
+			if (!response.ok) {
+				return false;
+			}
+
+			const data = await response.json();
+			// Check if it has the required LNURL-pay fields
+			return !!(data.callback && data.maxSendable && data.minSendable && data.tag === 'payRequest');
+		} catch (error) {
+			console.error('LUD-16 validation error:', error);
+			return false;
+		}
+	}
+
+	async function checkLud16Validation() {
+		if (!lud16.trim()) {
+			lud16ValidStatus = null;
+			return;
+		}
+
+		lud16ValidStatus = 'loading';
+		const isValid = await validateLud16(lud16.trim());
+		lud16ValidStatus = isValid ? 'valid' : 'invalid';
+	}
+
+	function debouncedLud16Validation() {
+		clearTimeout(lud16ValidationTimeout);
+		lud16ValidationTimeout = setTimeout(checkLud16Validation, 500);
+	}
+
 	async function saveProfile() {
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
@@ -325,6 +371,18 @@
 
 		if (lud16 && !isValidEmail(lud16)) {
 			alert('Please enter valid LN address');
+			return;
+		}
+
+		if (lud16 && lud16ValidStatus === 'loading') {
+			alert('Please wait for LN address validation to complete.');
+			return;
+		}
+
+		if (lud16 && lud16ValidStatus === 'invalid') {
+			alert(
+				'LN address is invalid, please verify it supports LNURL-pay.\nThe profile has not been saved!'
+			);
 			return;
 		}
 
@@ -594,12 +652,61 @@
 					Optional
 				</div>
 			</div>
-			<input
-				type="text"
-				placeholder="LN Address"
-				bind:value={lud16}
-				class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-			/>
+			<div class="relative">
+				<input
+					type="text"
+					placeholder="LN Address"
+					bind:value={lud16}
+					on:input={debouncedLud16Validation}
+					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+				/>
+				{#if lud16.trim() && lud16ValidStatus}
+					<div class="absolute right-3 top-1/2 -translate-y-1/2">
+						{#if lud16ValidStatus === 'loading'}
+							<!-- Loading spinner -->
+							<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else if lud16ValidStatus === 'valid'}
+							<!-- Valid checkmark -->
+							<svg
+								class="h-5 w-5 text-emerald-500"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 13l4 4L19 7"
+								></path>
+							</svg>
+						{:else if lud16ValidStatus === 'invalid'}
+							<!-- Invalid alert circle with exclamation -->
+							<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+								<circle cx="12" cy="12" r="10"></circle>
+								<path
+									fill="white"
+									d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+								></path>
+							</svg>
+						{/if}
+					</div>
+				{/if}
+			</div>
 			{#if uploading && saveProgress > 0 && saveProgress < 100}
 				<div class="mt-6">
 					<LoadingBar progress={saveProgress} />
