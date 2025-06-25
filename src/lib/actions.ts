@@ -14,30 +14,23 @@ export const indexRelays = [
 export async function fetchProfile(publicKey: string): Promise<Record<string, any> | null> {
 	const pool = new SimplePool();
 
-	return new Promise((resolve, reject) => {
-		const subscription = pool.subscribeMany(
-			indexRelays,
-			[
-				{
-					kinds: [0],
-					authors: [publicKey],
-					limit: 1
-				}
-			],
-			{
-				onevent(event) {
-					subscription.close();
-					const metadata = JSON.parse(event.content);
-					resolve(metadata);
-				},
-				onclose(error) {
-					console.error(`Subscription error: ${error}`);
-					subscription.close();
-					reject(error);
-				}
-			}
-		);
-	});
+	try {
+		const event = await pool.get(indexRelays, {
+			kinds: [0],
+			authors: [publicKey],
+			limit: 1
+		});
+
+		if (!event) {
+			return null;
+		}
+
+		const metadata = JSON.parse(event.content);
+		return metadata;
+	} catch (error) {
+		console.error('Failed to fetch profile:', error);
+		throw error;
+	}
 }
 
 export async function publishProfile(sk: Uint8Array, metadata: any) {
