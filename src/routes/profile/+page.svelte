@@ -34,6 +34,7 @@
 	let originalWebsite = '';
 	let originalNip05 = '';
 	let originalLud16 = '';
+	let nip05ValidStatus: 'valid' | 'invalid' | 'loading' | null = null;
 
 	// Reactive variable to track if form has been modified
 	$: isFormModified =
@@ -96,6 +97,11 @@
 			originalWebsite = website;
 			originalNip05 = nip05;
 			originalLud16 = lud16;
+
+			// Validate NIP-05 if present
+			if (nip05) {
+				checkNip05Validation();
+			}
 		}
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
@@ -249,6 +255,45 @@
 		return emailRegex.test(email);
 	}
 
+	async function validateNip05(nip05Address: string, publicKeyHex: string): Promise<boolean> {
+		if (!nip05Address || !isValidEmail(nip05Address)) {
+			return false;
+		}
+
+		try {
+			const [localPart, domain] = nip05Address.split('@');
+			const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(localPart)}`;
+
+			const response = await fetch(url);
+			if (!response.ok) {
+				return false;
+			}
+
+			const data = await response.json();
+			if (!data.names || typeof data.names !== 'object') {
+				return false;
+			}
+
+			const storedPubkey = data.names[localPart];
+			return storedPubkey === publicKeyHex;
+		} catch (error) {
+			console.error('NIP-05 validation error:', error);
+			return false;
+		}
+	}
+
+	async function checkNip05Validation() {
+		if (!nip05.trim()) {
+			nip05ValidStatus = null;
+			return;
+		}
+
+		nip05ValidStatus = 'loading';
+		const publicKeyHex = getPublicKey($sk);
+		const isValid = await validateNip05(nip05.trim(), publicKeyHex);
+		nip05ValidStatus = isValid ? 'valid' : 'invalid';
+	}
+
 	async function saveProfile() {
 		if (!name) {
 			alert('Please enter a name, bio and website are optional');
@@ -308,6 +353,11 @@
 		originalNip05 = nip05;
 		originalLud16 = lud16;
 		picturePreview = null;
+
+		// Validate NIP-05 after save if present
+		if (nip05) {
+			checkNip05Validation();
+		}
 	}
 </script>
 
@@ -402,7 +452,6 @@
 		<div>
 			<!-- File input for image upload -->
 			<input type="file" id="image" accept="image/*" on:change={previewImage} class="hidden" />
-			<!-- svelte-ignore a11y-autofocus -->
 			<div class="mb-1 flex items-end justify-between">
 				{#if name !== '' && name !== undefined}<label
 						for="name"
@@ -463,12 +512,60 @@
 					Optional
 				</div>
 			</div>
-			<input
-				type="text"
-				placeholder="NIP05 Address"
-				bind:value={nip05}
-				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-			/>
+			<div class="relative mb-4">
+				<input
+					type="text"
+					placeholder="NIP05 Address"
+					bind:value={nip05}
+					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+				/>
+				{#if nip05.trim() && nip05ValidStatus}
+					<div class="absolute right-3 top-1/2 -translate-y-1/2">
+						{#if nip05ValidStatus === 'loading'}
+							<!-- Loading spinner -->
+							<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
+								<circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								></circle>
+								<path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
+							</svg>
+						{:else if nip05ValidStatus === 'valid'}
+							<!-- Valid checkmark -->
+							<svg
+								class="h-5 w-5 text-emerald-500"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 13l4 4L19 7"
+								></path>
+							</svg>
+						{:else if nip05ValidStatus === 'invalid'}
+							<!-- Invalid alert circle with exclamation -->
+							<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+								<circle cx="12" cy="12" r="10"></circle>
+								<path
+									fill="white"
+									d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+								></path>
+							</svg>
+						{/if}
+					</div>
+				{/if}
+			</div>
 			<div class="mb-1 flex items-end justify-between">
 				{#if lud16 !== '' && lud16 !== undefined}<label
 						for="lud16"
