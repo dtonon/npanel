@@ -1,5 +1,6 @@
 import { type NostrEvent } from '@nostr/tools';
 import { finalizeEvent } from '@nostr/tools/pure';
+import { getPublicKey } from 'nostr-tools';
 import { pool } from '@nostr/gadgets/global';
 import { SimplePool } from 'nostr-tools/pool';
 
@@ -34,12 +35,19 @@ export async function fetchProfile(publicKey: string): Promise<Record<string, an
 }
 
 export async function publishProfile(sk: Uint8Array, metadata: any) {
+	const publicKey = getPublicKey(sk);
+
+	const existingProfile = await fetchProfile(publicKey);
+
+	// Merge existing metadata with updated values, giving priority to new values
+	const mergedMetadata = existingProfile ? { ...existingProfile, ...metadata } : metadata;
+
 	const signedEvent = finalizeEvent(
 		{
 			kind: 0,
 			created_at: Math.floor(Date.now() / 1000),
 			tags: [],
-			content: JSON.stringify(metadata)
+			content: JSON.stringify(mergedMetadata)
 		},
 		sk
 	);
