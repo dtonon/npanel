@@ -38,6 +38,19 @@
 	let nip05ValidationTimeout: number;
 	let lud16ValidStatus: 'valid' | 'invalid' | 'loading' | null = null;
 	let lud16ValidationTimeout: number;
+	let showNicknameHelp = false;
+
+	function handleClickOutside(event: MouseEvent) {
+		if (showNicknameHelp && !(event.target as Element).closest('.nickname-help-container')) {
+			showNicknameHelp = false;
+		}
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (showNicknameHelp && event.key === 'Escape') {
+			showNicknameHelp = false;
+		}
+	}
 
 	// Reactive variable to track if form has been modified
 	$: isFormModified =
@@ -113,11 +126,15 @@
 		}
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
+		document.addEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleKeydown);
 	});
 
 	onDestroy(() => {
 		if (browser) {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleKeydown);
 		}
 	});
 
@@ -539,14 +556,44 @@
 				</div>
 			</div>
 			<!-- svelte-ignore a11y-autofocus -->
-			<input
-				id="name"
-				type="text"
-				placeholder="Your (nick)name"
-				bind:value={name}
-				autofocus={!isMobile}
-				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-			/>
+			<div class="relative mb-4">
+				<input
+					id="name"
+					type="text"
+					placeholder="Your (nick)name"
+					bind:value={name}
+					autofocus={!isMobile}
+					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+				/>
+				<!-- Help icon for nickname -->
+				<div class="nickname-help-container absolute right-3 top-1/2 -translate-y-1/2">
+					<button
+						type="button"
+						on:click={() => (showNicknameHelp = !showNicknameHelp)}
+						class="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-300 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+						title="Help about nickname"
+					>
+						<span class="text-xs font-bold">?</span>
+					</button>
+					<!-- Help tooltip -->
+					{#if showNicknameHelp}
+						<div
+							class="absolute right-0 top-8 z-10 w-80 rounded-lg border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
+						>
+							<div class="text-sm text-neutral-700 dark:text-neutral-300">
+								The name is not a unique username, on Nostr we can have as many Jacks we want! Feel
+								free to use your real name or a nickname; you can always change it later.
+								<br /><br />
+								But remember: online privacy matters, don't share sensitive data.
+							</div>
+							<!-- Close arrow pointing to the help icon -->
+							<div
+								class="absolute -top-2 right-3 h-4 w-4 rotate-45 border-l border-t border-neutral-200 bg-white dark:border-neutral-600 dark:bg-neutral-800"
+							></div>
+						</div>
+					{/if}
+				</div>
+			</div>
 			<div class="mb-1 flex items-end justify-between">
 				{#if about !== '' && about !== undefined}<label
 						for="about"
