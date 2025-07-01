@@ -446,11 +446,6 @@
 		originalNip05 = nip05;
 		originalLud16 = lud16;
 		picturePreview = null;
-
-		// Validate NIP-05 after save if present
-		if (nip05) {
-			checkNip05Validation();
-		}
 	}
 </script>
 
