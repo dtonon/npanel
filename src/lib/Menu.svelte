@@ -12,7 +12,7 @@
 
 	const menuItems = [
 		{ id: 'profile', label: 'Profile', path: '/profile' },
-		{ id: 'bunker', label: 'Bunker', path: '/bunker' },
+		{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' },
 		{ id: 'relays', label: 'Relays', path: '/relays' },
 		{ id: 'backup', label: 'Backup', path: '/backup' }
 	];
