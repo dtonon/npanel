@@ -58,3 +58,74 @@ export async function publishProfile(sk: Uint8Array, metadata: any) {
 export async function clearSession() {
 	sessionStorage.clear();
 }
+
+export interface RelayInfo {
+	url: string;
+	read: boolean;
+	write: boolean;
+	expanded?: boolean;
+}
+
+export async function fetchRelayList(publicKey: string): Promise<RelayInfo[]> {
+	const pool = new SimplePool();
+
+	try {
+		const event = await pool.get(indexRelays, {
+			kinds: [10002],
+			authors: [publicKey],
+			limit: 1
+		});
+
+		if (!event) {
+			return [];
+		}
+
+		const relays: RelayInfo[] = [];
+		for (const tag of event.tags) {
+			if (tag[0] === 'r' && tag[1]) {
+				const url = tag[1];
+				const marker = tag[2];
+
+				if (marker === 'read') {
+					relays.push({ url, read: true, write: false });
+				} else if (marker === 'write') {
+					relays.push({ url, read: false, write: true });
+				} else {
+					relays.push({ url, read: true, write: true });
+				}
+			}
+		}
+
+		return relays;
+	} catch (error) {
+		console.error('Failed to fetch relay list:', error);
+		return [];
+	}
+}
+
+export async function publishRelayList(sk: Uint8Array, relays: RelayInfo[]) {
+	const tags: string[][] = [];
+
+	for (const relay of relays) {
+		if (relay.read && relay.write) {
+			tags.push(['r', relay.url]);
+		} else if (relay.read) {
+			tags.push(['r', relay.url, 'read']);
+		} else if (relay.write) {
+			tags.push(['r', relay.url, 'write']);
+		}
+	}
+
+	const signedEvent = finalizeEvent(
+		{
+			kind: 10002,
+			created_at: Math.floor(Date.now() / 1000),
+			tags,
+			content: ''
+		},
+		sk
+	);
+
+	pool.publish(indexRelays, signedEvent);
+	console.log('Published relay list: ' + JSON.stringify(signedEvent));
+}
