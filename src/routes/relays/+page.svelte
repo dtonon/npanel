@@ -67,7 +67,6 @@
 			console.error('Failed to publish relay list:', error);
 		}
 	}
-
 </script>
 
 <TwoColumnLayout>
@@ -189,13 +188,61 @@
 							{#if relay.expanded}
 								<div class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:bg-neutral-800">
 									<div class="space-y-3">
-										<div class="text-sm text-neutral-600 dark:text-neutral-400">
-											Relay description xyz with some details<br />
-											NIPS: 1, 11, 42, 70, 86<br />
-											<a href="mailto:contact@owner.com" class="text-accent hover:underline"
-												>contact@owner.com</a
-											>
-										</div>
+										{#if relay.nip11}
+											<div class="text-sm text-neutral-600 dark:text-neutral-400">
+												{#if relay.nip11.name}
+													<div class="mb-1 font-medium text-black dark:text-white">
+														{relay.nip11.name}
+													</div>
+												{/if}
+												{#if relay.nip11.description}
+													<div class="mb-2">{relay.nip11.description}</div>
+												{/if}
+												{#if relay.nip11.supported_nips && relay.nip11.supported_nips.length > 0}
+													<div class="mb-2">
+														<span class="font-medium">NIPs:</span>
+														{relay.nip11.supported_nips.join(', ')}
+													</div>
+												{/if}
+												{#if relay.nip11.software}
+													<div class="mb-2">
+														<span class="font-medium">Software:</span>
+														{relay.nip11.software}
+														{#if relay.nip11.version}
+															v{relay.nip11.version}
+														{/if}
+													</div>
+												{/if}
+												{#if relay.nip11.limitation}
+													<div class="mb-2">
+														<span class="font-medium">Limitations:</span>
+														{#if relay.nip11.limitation.auth_required}
+															Auth required,
+														{/if}
+														{#if relay.nip11.limitation.payment_required}
+															Payment required,
+														{/if}
+														{#if relay.nip11.limitation.max_message_length}
+															Max message: {relay.nip11.limitation.max_message_length}
+														{/if}
+													</div>
+												{/if}
+												{#if relay.nip11.contact}
+													<div>
+														<a
+															href="mailto:{relay.nip11.contact}"
+															class="text-accent hover:underline"
+														>
+															{relay.nip11.contact}
+														</a>
+													</div>
+												{/if}
+											</div>
+										{:else}
+											<div class="text-sm text-neutral-500 dark:text-neutral-400">
+												No relay information available
+											</div>
+										{/if}
 
 										<div class="flex items-center justify-end pt-2">
 											<button
