@@ -10,11 +10,7 @@
 
 	const relays = writable<import('$lib/actions').RelayInfo[]>([]);
 
-	let showAddView = false;
-	let newRelayUrl = '';
 	let isLoading = true;
-	let addError = '';
-	let isAdding = false;
 
 	onMount(async () => {
 		if ($sk.length === 0) {
@@ -72,84 +68,6 @@
 		}
 	}
 
-	function validateRelayUrl(url: string): string | null {
-		if (!url.trim()) {
-			return 'URL is required';
-		}
-
-		url = url.trim();
-		if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
-			url = 'wss://' + url;
-		}
-
-		try {
-			const parsed = new URL(url);
-			if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
-				return 'URL must use ws:// or wss:// protocol';
-			}
-			if (!parsed.hostname) {
-				return 'Invalid hostname';
-			}
-		} catch {
-			return 'Invalid URL format';
-		}
-
-		// Check if relay already exists
-		if ($relays.some((relay) => relay.url === url)) {
-			return 'Relay already exists';
-		}
-
-		return null;
-	}
-
-	async function addRelay() {
-		if (isAdding) return;
-
-		addError = '';
-		let url = newRelayUrl.trim();
-
-		if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
-			url = 'wss://' + url;
-		}
-
-		const validationError = validateRelayUrl(url);
-		if (validationError) {
-			addError = validationError;
-			return;
-		}
-
-		isAdding = true;
-
-		try {
-			const newRelay: RelayInfo = {
-				url,
-				read: true,
-				write: true,
-				expanded: false
-			};
-
-			relays.update((list) => [...list, newRelay]);
-			await publishRelayList($sk, $relays);
-
-			newRelayUrl = '';
-			addError = '';
-			showAddView = false;
-		} catch (error) {
-			console.error('Failed to publish relay list:', error);
-			addError = 'Failed to add relay. Please try again.';
-
-			// Remove the relay from store if publishing failed
-			relays.update((list) => list.filter((r) => r.url !== url));
-		} finally {
-			isAdding = false;
-		}
-	}
-
-	function goBackToList() {
-		showAddView = false;
-		newRelayUrl = '';
-		addError = '';
-	}
 </script>
 
 <TwoColumnLayout>
@@ -181,71 +99,6 @@
 		{#if isLoading}
 			<div class="flex justify-center p-8">
 				<div class="text-neutral-500">Loading relays...</div>
-			</div>
-		{:else if showAddView}
-			<!-- Add Relay View -->
-			<div class="space-y-6">
-				<button
-					on:click={goBackToList}
-					class="flex items-center text-accent transition-colors hover:text-accent/80"
-				>
-					← Go back to relays' list
-				</button>
-
-				<div class="space-y-4">
-					<h2 class="text-xl font-semibold text-black dark:text-white">Add a new relay</h2>
-					<p class="text-neutral-600 dark:text-neutral-400">
-						Enter the relay URL, in the next step you could configure the read/write state
-					</p>
-
-					<div class="space-y-4">
-						<input
-							bind:value={newRelayUrl}
-							type="text"
-							placeholder="Relay's url"
-							class="w-full rounded-lg border border-neutral-300 bg-white p-3 text-black dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
-							class:border-red-500={addError}
-							disabled={isAdding}
-							on:keydown={(e) => e.key === 'Enter' && addRelay()}
-							on:input={() => (addError = '')}
-						/>
-
-						{#if addError}
-							<div class="text-sm text-red-500">{addError}</div>
-						{/if}
-
-						<div class="flex justify-end">
-							<button
-								on:click={addRelay}
-								disabled={!newRelayUrl.trim() || isAdding}
-								class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
-							>
-								<span>
-									{#if isAdding}
-										Adding...
-									{:else}
-										Add
-									{/if}
-								</span>
-								<div class="ml-4 mr-2">
-									<svg
-										class="h-5 w-5"
-										viewBox="0 0 32 29"
-										fill="none"
-										xmlns="http://www.w3.org/2000/svg"
-									>
-										<path
-											fill="currentColor"
-											fill-rule="evenodd"
-											clip-rule="evenodd"
-											d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
-										/>
-									</svg>
-								</div>
-							</button>
-						</div>
-					</div>
-				</div>
 			</div>
 		{:else}
 			<!-- Main Relays View -->
@@ -370,7 +223,7 @@
 				<!-- Add Relay Button -->
 				<div class="flex justify-end pt-4">
 					<button
-						on:click={() => (showAddView = true)}
+						on:click={() => goto('/relay-add')}
 						class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
 					>
 						<span>Add a relay</span>
