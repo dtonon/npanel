@@ -182,6 +182,10 @@
 			isAdding = false;
 		}
 	}
+
+	function autofocus(node) {
+		node.focus();
+	}
 </script>
 
 <TwoColumnLayout>
@@ -237,6 +241,7 @@
 							addError = '';
 							validationStatus = '';
 						}}
+						use:autofocus
 					/>
 
 					{#if addError}
