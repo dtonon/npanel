@@ -17,7 +17,7 @@
 		{ id: 'backup', label: 'Backup', path: '/backup' }
 	];
 
-	function handleMenuClick(item) {
+	function handleMenuClick(item: { id: string; label: string; path: string }) {
 		selectedItem = item.id;
 		showMobileMenu = false;
 		goto(item.path);

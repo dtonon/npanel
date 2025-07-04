@@ -13,6 +13,8 @@
 	let newRelayUrl = '';
 	let addError = '';
 	let isAdding = false;
+	let isValidating = false;
+	let validationStatus = '';
 
 	onMount(async () => {
 		if ($sk.length === 0) {
@@ -59,10 +61,85 @@
 		return null;
 	}
 
+	async function testWebSocketConnection(url: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			const ws = new WebSocket(url);
+			const timeout = setTimeout(() => {
+				ws.close();
+				resolve(false);
+			}, 5000);
+
+			ws.onopen = () => {
+				clearTimeout(timeout);
+				ws.close();
+				resolve(true);
+			};
+
+			ws.onerror = () => {
+				clearTimeout(timeout);
+				resolve(false);
+			};
+
+			ws.onclose = () => {
+				clearTimeout(timeout);
+			};
+		});
+	}
+
+	async function testNip11Validation(url: string): Promise<boolean> {
+		try {
+			const httpUrl = url.replace('ws://', 'http://').replace('wss://', 'https://');
+			const response = await fetch(httpUrl, {
+				method: 'GET',
+				headers: {
+					Accept: 'application/nostr+json'
+				}
+			});
+
+			if (!response.ok) {
+				return false;
+			}
+
+			const nip11Data = await response.json();
+			return nip11Data && typeof nip11Data === 'object';
+		} catch {
+			return false;
+		}
+	}
+
+	async function validateRelayConnection(url: string): Promise<string | null> {
+		isValidating = true;
+		validationStatus = 'Testing WebSocket connection...';
+
+		try {
+			const wsConnected = await testWebSocketConnection(url);
+			if (wsConnected) {
+				validationStatus = 'WebSocket connection successful!';
+				return null;
+			}
+
+			validationStatus = 'WebSocket failed, checking NIP-11...';
+			const nip11Valid = await testNip11Validation(url);
+			if (nip11Valid) {
+				validationStatus = 'NIP-11 validation successful!';
+				return null;
+			}
+
+			validationStatus = '';
+			return 'Unable to connect to relay or validate via NIP-11';
+		} catch {
+			validationStatus = '';
+			return 'Connection test failed';
+		} finally {
+			isValidating = false;
+		}
+	}
+
 	async function addRelay() {
-		if (isAdding) return;
+		if (isAdding || isValidating) return;
 
 		addError = '';
+		validationStatus = '';
 		let url = newRelayUrl.trim();
 
 		if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
@@ -72,6 +149,12 @@
 		const validationError = validateRelayUrl(url);
 		if (validationError) {
 			addError = validationError;
+			return;
+		}
+
+		const connectionError = await validateRelayConnection(url);
+		if (connectionError) {
+			addError = connectionError;
 			return;
 		}
 
@@ -148,23 +231,32 @@
 						placeholder="Relay's url"
 						class="w-full rounded-lg border border-neutral-300 bg-white p-3 text-black dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
 						class:border-red-500={addError}
-						disabled={isAdding}
+						disabled={isAdding || isValidating}
 						on:keydown={(e) => e.key === 'Enter' && addRelay()}
-						on:input={() => (addError = '')}
+						on:input={() => {
+							addError = '';
+							validationStatus = '';
+						}}
 					/>
 
 					{#if addError}
 						<div class="text-sm text-red-500">{addError}</div>
 					{/if}
 
+					{#if validationStatus}
+						<div class="text-sm text-blue-500">{validationStatus}</div>
+					{/if}
+
 					<div class="flex justify-end">
 						<button
 							on:click={addRelay}
-							disabled={!newRelayUrl.trim() || isAdding}
+							disabled={!newRelayUrl.trim() || isAdding || isValidating}
 							class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
 						>
 							<span>
-								{#if isAdding}
+								{#if isValidating}
+									Validating...
+								{:else if isAdding}
 									Adding...
 								{:else}
 									Add
