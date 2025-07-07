@@ -126,7 +126,26 @@
 								on:keydown={(e) => e.key === 'Enter' && toggleRelayExpansion(index)}
 							>
 								<div class="flex-1">
-									<div class="text-xl text-black dark:text-white">{relay.url}</div>
+									<div
+										class="text-xl text-black dark:text-white {relay.read || relay.write
+											? 'text-black dark:text-white'
+											: 'text-neutral-400'}"
+									>
+										{relay.url}
+										{#if !relay.read && !relay.write}
+											<svg
+												class="inline h-5 w-5 text-accent"
+												fill="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<circle cx="12" cy="12" r="10"></circle>
+												<path
+													fill="white"
+													d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+												></path>
+											</svg>
+										{/if}
+									</div>
 								</div>
 
 								<div class="flex items-center space-x-2">
@@ -166,6 +185,13 @@
 							{#if relay.expanded}
 								<div class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:bg-neutral-800">
 									<div class="space-y-3">
+										{#if !relay.read && !relay.write}
+											<div class="mb-3 text-sm text-accent">
+												The relay has both Read and Write flags disabled, so it has been removed
+												from the list and it will not be available in the next refresh; enable one
+												or both flags to add it back.
+											</div>
+										{/if}
 										{#if relay.nip11}
 											<div class="text-sm text-neutral-600 dark:text-neutral-400">
 												{#if relay.nip11.name}
