@@ -11,6 +11,7 @@
 	const relays = writable<import('$lib/actions').RelayInfo[]>([]);
 
 	let isLoading = true;
+	let saveTimeout: number;
 
 	onMount(async () => {
 		if ($sk.length === 0) {
@@ -49,7 +50,7 @@
 		});
 
 		try {
-			await publishRelayList($sk, $relays);
+			debouncedSave();
 		} catch (error) {
 			console.error('Failed to publish relay list:', error);
 		}
@@ -62,10 +63,15 @@
 		});
 
 		try {
-			await publishRelayList($sk, $relays);
+			debouncedSave();
 		} catch (error) {
 			console.error('Failed to publish relay list:', error);
 		}
+	}
+
+	function debouncedSave() {
+		clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(() => publishRelayList($sk, $relays), 1000);
 	}
 </script>
 
