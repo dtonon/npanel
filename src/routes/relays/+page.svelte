@@ -130,56 +130,34 @@
 								</div>
 
 								<div class="flex items-center space-x-2">
-									<!-- Read Icon (Eye) -->
+									<!-- Read -->
 									<button
 										on:click|stopPropagation={() => toggleRelayPermission(index, 'read')}
 										class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
 										title="Toggle read permission"
 									>
-										<svg
+										<div
 											class="h-5 w-5 {relay.read
 												? 'text-black dark:text-white'
 												: 'text-neutral-400'}"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
 										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-											/>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-											/>
-										</svg>
+											R
+										</div>
 									</button>
 
-									<!-- Write Icon (Pen) -->
+									<!-- Write -->
 									<button
 										on:click|stopPropagation={() => toggleRelayPermission(index, 'write')}
 										class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
 										title="Toggle write permission"
 									>
-										<svg
+										<div
 											class="h-5 w-5 {relay.write
 												? 'text-black dark:text-white'
 												: 'text-neutral-400'}"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
 										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-											/>
-										</svg>
+											W
+										</div>
 									</button>
 								</div>
 							</div>
