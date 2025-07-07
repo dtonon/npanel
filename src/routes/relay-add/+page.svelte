@@ -233,7 +233,7 @@
 						bind:value={newRelayUrl}
 						type="text"
 						placeholder="Relay's url"
-						class="w-full rounded-lg border border-neutral-300 bg-white p-3 text-black dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
+						class="w-full rounded border-2 border-neutral-300 bg-white p-3 text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						class:border-red-500={addError}
 						disabled={isAdding || isValidating}
 						on:keydown={(e) => e.key === 'Enter' && addRelay()}
@@ -245,18 +245,26 @@
 					/>
 
 					{#if addError}
-						<div class="text-sm text-red-500">{addError}</div>
+						<div class="rounded bg-amber-100 p-2 text-sm text-accent dark:bg-amber-400">
+							{addError}
+						</div>
 					{/if}
 
 					{#if validationStatus}
-						<div class="text-sm text-blue-500">{validationStatus}</div>
+						<div class="text-sm text-neutral-600 dark:text-neutral-400">{validationStatus}</div>
 					{/if}
 
 					<div class="flex justify-end">
 						<button
 							on:click={addRelay}
 							disabled={!newRelayUrl.trim() || isAdding || isValidating}
-							class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
+							class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
+								!newRelayUrl.trim()
+									? 'bg-neutral-600 text-white dark:bg-neutral-600'
+									: isAdding || isValidating
+										? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
+										: 'bg-accent text-white'
+							}`}
 						>
 							<span>
 								{#if isValidating}
@@ -267,21 +275,23 @@
 									Add
 								{/if}
 							</span>
-							<div class="ml-4 mr-2">
-								<svg
-									class="h-5 w-5"
-									viewBox="0 0 32 29"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-										fill="currentColor"
-										fill-rule="evenodd"
-										clip-rule="evenodd"
-										d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
-									/>
-								</svg>
-							</div>
+							{#if !isValidating && !isAdding}
+								<div class="ml-4 mr-2">
+									<svg
+										class="h-5 w-5"
+										viewBox="0 0 32 29"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											fill-rule="evenodd"
+											clip-rule="evenodd"
+											d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
+										/>
+									</svg>
+								</div>
+							{/if}
 						</button>
 					</div>
 				</div>

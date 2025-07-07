@@ -119,8 +119,8 @@
 						<div
 							class={`overflow-hidden rounded border-2 ${
 								relay.expanded
-									? 'border-neutral-700'
-									: 'border-neutral-300 hover:border-neutral-400'
+									? 'border-neutral-700 dark:border-neutral-400'
+									: 'border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500'
 							}`}
 						>
 							<!-- Relay Row -->
@@ -189,7 +189,9 @@
 
 							<!-- Expanded Details -->
 							{#if relay.expanded}
-								<div class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:bg-neutral-800">
+								<div
+									class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:border-neutral-400 dark:bg-neutral-800"
+								>
 									<div class="space-y-3">
 										{#if !relay.read && !relay.write}
 											<div class="mb-3 text-sm text-accent">
@@ -257,7 +259,7 @@
 										<div class="flex items-center justify-end pt-2">
 											<button
 												on:click={() => removeRelay(index)}
-												class="flex items-center space-x-1 text-sm text-red-500 transition-colors hover:text-red-600"
+												class="flex items-center space-x-1 text-sm text-accent transition-colors hover:underline"
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
