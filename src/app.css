@@ -6,12 +6,12 @@
 	:focus-visible,
 	.custom-focus:focus,
 	.custom-focus:focus-within {
-		outline: 2px dashed rgb(255, 183, 0); /* Example: neutral-300 */
+		outline: 2px dashed rgb(255, 183, 0); /* neutral-300 */
 		border-radius: 2px;
 	}
 
 	.input-hover-enabled:not(:focus):hover {
-		border-color: rgb(163 163 163);
+		border-color: rgb(163 163 163); /* neutral-400 */
 	}
 
 	/* Dark mode background gradient */

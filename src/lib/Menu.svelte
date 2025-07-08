@@ -17,7 +17,7 @@
 		{ id: 'backup', label: 'Backup', path: '/backup' }
 	];
 
-	function handleMenuClick(item) {
+	function handleMenuClick(item: { id: string; label: string; path: string }) {
 		selectedItem = item.id;
 		showMobileMenu = false;
 		goto(item.path);
@@ -150,9 +150,12 @@
 	<div class="">
 		{#each menuItems as item}
 			<div
-				class="mb-4 rounded-md border-b-2 border-l-2 border-neutral-400 px-4 py-2 hover:cursor-pointer hover:text-accent dark:border-neutral-600"
-				class:border-neutral-600={selectedItem === item.id}
-				class:dark:border-neutral-500={selectedItem === item.id}
+				class={`mb-4 rounded-md border-b-2 border-l-2  px-4 py-2 hover:cursor-pointer hover:text-accent
+				${
+					selectedItem === item.id
+						? 'border-neutral-600 dark:border-neutral-500'
+						: 'border-neutral-400 dark:border-neutral-600'
+				}`}
 				on:click={() => handleMenuClick(item)}
 				on:keydown={(e) => e.key === 'Enter' && handleMenuClick(item)}
 				role="button"
