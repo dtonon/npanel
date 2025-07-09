@@ -110,7 +110,7 @@
 		{:else}
 			<!-- Main Relays View -->
 			<div class="space-y-6">
-				<div class="leading-6 text-neutral-600 dark:text-neutral-400">
+				<div class=" text-neutral-600 dark:text-neutral-400">
 					In this area you can manage your relays and check their informations. Make sure to have a
 					couple of different "read" and "write" relays, it's not necessary to have a lot of relays.
 					<button class="text-accent hover:underline">Learn more</button> about relays.

@@ -1,7 +1,14 @@
-import { writable, type Writable } from 'svelte/store';
+import { writable, type Writable, derived } from 'svelte/store';
+import { nip19, getPublicKey } from 'nostr-tools';
 
 export const sk = createSessionWritable<Uint8Array>('sk', new Uint8Array());
 export const picture = createSessionWritable('picture', '');
+
+// Derived store for npub
+export const npub = derived(sk, ($sk) => {
+	if ($sk.length === 0) return '';
+	return nip19.npubEncode(getPublicKey($sk));
+});
 
 // Utility function to persist values in localStorage
 export function createLocalWritable<T>(label: string, initialValue: T): Writable<T> {
@@ -13,7 +20,7 @@ export function createLocalWritable<T>(label: string, initialValue: T): Writable
 			try {
 				const parsed = JSON.parse(storedValue);
 				data = parsed.value;
-			} catch (e) {
+			} catch {
 				data = initialValue;
 			}
 		}
