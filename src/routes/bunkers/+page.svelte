@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getPublicKey } from 'nostr-tools';
 	import { sk } from '$lib/store';
 	import { writable } from 'svelte/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
@@ -15,6 +14,7 @@
 		expanded: boolean;
 		isRenaming: boolean;
 		newName: string;
+		isSaving: boolean;
 	};
 
 	const bunkers = writable<BunkerInfo[]>([
@@ -23,21 +23,24 @@
 			url: 'bunker://8cfec14dc07bcc113fc447aee962af10d17eef6f7582a905f0bb1cd49904fa9a?relay=wss%3A%2F%2Fpromenade.fiatjaf.com',
 			expanded: false,
 			isRenaming: false,
-			newName: ''
+			newName: '',
+			isSaving: false
 		},
 		{
 			name: 'Backup Bunker',
 			url: 'bunker://9d2a33c45f1b6d8e7a3c2b1f0e8d9c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d?relay=wss%3A%2F%2Frelay.nostr.info',
 			expanded: false,
 			isRenaming: false,
-			newName: ''
+			newName: '',
+			isSaving: false
 		},
 		{
 			name: 'Test Bunker',
 			url: 'bunker://1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b?relay=wss%3A%2F%2Fnostr.wine',
 			expanded: false,
 			isRenaming: false,
-			newName: ''
+			newName: '',
+			isSaving: false
 		}
 	]);
 
@@ -45,6 +48,8 @@
 	let showCopyToast = false;
 	let copyToastMessage = '';
 	let copyToastPosition = { x: 0, y: 0 };
+
+	$: anyRenaming = $bunkers.some((bunker) => bunker.isRenaming);
 
 	onMount(async () => {
 		if ($sk.length === 0) {
@@ -58,6 +63,8 @@
 	});
 
 	function toggleBunkerExpansion(index: number) {
+		if (anyRenaming) return;
+
 		bunkers.update((list) => {
 			return list.map((bunker, i) => ({
 				...bunker,
@@ -78,21 +85,37 @@
 		bunkers.update((list) => {
 			list[index].isRenaming = false;
 			list[index].newName = '';
+			list[index].isSaving = false;
 			return [...list];
 		});
 	}
 
 	function saveRename(index: number) {
 		bunkers.update((list) => {
-			const newName = list[index].newName.trim();
-			if (newName) {
-				list[index].name = newName;
-				console.log(`Renamed bunker to: ${newName}`);
-			}
-			list[index].isRenaming = false;
-			list[index].newName = '';
+			list[index].isSaving = true;
 			return [...list];
 		});
+
+		setTimeout(() => {
+			bunkers.update((list) => {
+				const newName = list[index].newName.trim();
+				if (newName) {
+					list[index].name = newName;
+					console.log(`Renamed bunker to: ${newName}`);
+				}
+				list[index].isSaving = false;
+				return [...list];
+			});
+
+			// Wait 1 second after save success to exit rename mode
+			setTimeout(() => {
+				bunkers.update((list) => {
+					list[index].isRenaming = false;
+					list[index].newName = '';
+					return [...list];
+				});
+			}, 1000);
+		}, 300); // Short delay to show saving state
 	}
 
 	function removeBunker(index: number) {
@@ -178,12 +201,20 @@
 							class={`overflow-hidden rounded border-2 ${
 								bunker.expanded
 									? 'border-neutral-700 dark:border-neutral-400'
-									: 'border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500'
+									: anyRenaming
+										? 'border-neutral-300 dark:border-neutral-600'
+										: 'border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500'
 							}`}
 						>
 							<!-- Bunker Row -->
 							<div
-								class="flex cursor-pointer items-center justify-between transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800"
+								class={`flex items-center justify-between transition-colors ${
+									bunker.isRenaming
+										? 'cursor-default'
+										: anyRenaming
+											? 'cursor-not-allowed'
+											: 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800'
+								}`}
 								on:click={() => !bunker.isRenaming && toggleBunkerExpansion(index)}
 								role="button"
 								tabindex="0"
@@ -206,7 +237,7 @@
 											disabled={!bunker.newName.trim()}
 											text="Save"
 											okText="Saved"
-											isSaving={false}
+											isSaving={bunker.isSaving}
 											isModified={bunker.newName.trim() !== bunker.name}
 											roundedVariant="rounded-l"
 										/>
