@@ -5,6 +5,7 @@
 	export let okText: string;
 	export let isSaving = false;
 	export let isModified = false;
+	export let roundedVariant = 'rounded';
 
 	let isShowingSuccess = false;
 	let successTimeout: number | null = null;
@@ -43,7 +44,7 @@
 <button
 	on:click={onClick}
 	disabled={disabled || isSaving || isShowingSuccess}
-	class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
+	class={`inline-flex items-center ${roundedVariant} px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
 		(disabled || isSaving) && !isShowingSuccess
 			? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
 			: isShowingSuccess
