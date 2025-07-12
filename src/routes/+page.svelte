@@ -53,7 +53,7 @@
 				const decoded = decrypt(loginStr, password);
 				$sk = decoded;
 				goto('/profile');
-			} catch (error) {
+			} catch (_error) {
 				alert(
 					"The ncryptsec/password combination doesn't seem to be valid, double check it and try again"
 				);
@@ -68,7 +68,7 @@
 				} else {
 					console.log('decoded.type', decoded.type);
 				}
-			} catch (error) {
+			} catch (_error) {
 				alert("The entered nsec doesn't seem to be valid, double check it and try again");
 				return false;
 			}
@@ -209,7 +209,7 @@
 							on:click={() => login()}
 							class="flex flex-row items-center justify-center gap-2 rounded bg-accent px-8 py-2 text-[1.5rem] text-white"
 						>
-							Login <img src="/icons/arrow-right.svg" alt="Icon" class="h-6 w-6" />
+							Login <img src="/icons/arrow-right.svg" alt="arrow-right" class="h-6 w-6" />
 						</button>
 					</div>
 

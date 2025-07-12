@@ -10,12 +10,13 @@
 	import Menu from '$lib/Menu.svelte';
 	import { sk, picture } from '$lib/store';
 	import { getPublicKey } from 'nostr-tools';
-	import { fetchProfile, publishProfile } from '$lib/actions';
+	import { publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
 	import { base64 } from '@scure/base';
 	import { bytesToHex } from '@noble/hashes/utils';
 	import { sha256 } from '@noble/hashes/sha256';
 	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
+	import { loadNostrUser } from '@nostr/gadgets/metadata';
 
 	let isLoading = true;
 	let name = '';
@@ -76,8 +77,6 @@
 	function handleBeforeUnload(event: BeforeUnloadEvent) {
 		if (isFormModified && saveProgress === 0) {
 			event.preventDefault();
-			// Most modern browsers ignore custom messages and show their own
-			event.returnValue = '';
 		}
 	}
 
@@ -97,16 +96,16 @@
 
 		const publicKeyHex = getPublicKey($sk);
 
-		const userProfile = await fetchProfile(publicKeyHex);
+		const userProfile = await loadNostrUser({ pubkey: publicKeyHex, forceUpdate: true });
 		console.log('userProfile', userProfile);
 		if (userProfile) {
-			name = userProfile.name || '';
-			$picture = userProfile.picture || '';
-			originalPicture = userProfile.picture || '';
-			about = userProfile.about || '';
-			website = userProfile.website || '';
-			nip05 = userProfile.nip05 || '';
-			lud16 = userProfile.lud16 || '';
+			name = userProfile.metadata.name || '';
+			$picture = userProfile.metadata.picture || '';
+			originalPicture = userProfile.metadata.picture || '';
+			about = userProfile.metadata.about || '';
+			website = userProfile.metadata.website || '';
+			nip05 = userProfile.metadata.nip05 || '';
+			lud16 = userProfile.metadata.lud16 || '';
 
 			// Store original values
 			originalName = name;
@@ -427,7 +426,7 @@
 			uploading = false;
 		}
 
-		publishProfile($sk, {
+		await publishProfile($sk, {
 			name: name,
 			about: about,
 			picture: $picture,
