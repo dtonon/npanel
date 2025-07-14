@@ -119,11 +119,14 @@
 	}
 
 	function removeBunker(index: number) {
-		bunkers.update((list) => {
-			const removed = list.splice(index, 1);
-			console.log(`Removed bunker: ${removed[0].name}`);
-			return [...list];
-		});
+		const bunkerName = $bunkers[index].name;
+		if (confirm(`Are you sure you want to remove "${bunkerName}"? This action cannot be undone.`)) {
+			bunkers.update((list) => {
+				const removed = list.splice(index, 1);
+				console.log(`Removed bunker: ${removed[0].name}`);
+				return [...list];
+			});
+		}
 	}
 
 	function copyToClipboard(url: string, event: MouseEvent) {
