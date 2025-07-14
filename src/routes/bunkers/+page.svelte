@@ -351,8 +351,13 @@
 				<!-- Add Bunker Button -->
 				<div class="flex justify-end pt-4">
 					<button
-						on:click={() => goto('/bunker-add')}
-						class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
+						on:click={() => !anyRenaming && goto('/bunker-add')}
+						disabled={anyRenaming}
+						class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
+							anyRenaming
+								? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
+								: 'bg-accent text-white hover:bg-accent/90'
+						}`}
 					>
 						<span>Add a bunker</span>
 						<div class="ml-4 mr-2">
