@@ -3,7 +3,6 @@ import { getPublicKey } from 'nostr-tools';
 import { pool } from '@nostr/gadgets/global';
 import { SimplePool } from 'nostr-tools/pool';
 import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
-import { nsecEncode } from 'nostr-tools/nip19';
 
 export const indexRelays = [
 	'wss://purplepag.es',
@@ -14,7 +13,6 @@ export const indexRelays = [
 ];
 
 export async function publishProfile(sk: Uint8Array, metadata: NostrUser) {
-	console.log(nsecEncode(sk));
 
 	const publicKey = getPublicKey(sk);
 
