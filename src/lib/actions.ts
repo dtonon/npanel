@@ -2,7 +2,7 @@ import { finalizeEvent } from '@nostr/tools/pure';
 import { getPublicKey } from 'nostr-tools';
 import { pool } from '@nostr/gadgets/global';
 import { SimplePool } from 'nostr-tools/pool';
-import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
+import { loadNostrUser, type ProfileMetadata } from '@nostr/gadgets/metadata';
 
 export const indexRelays = [
 	'wss://purplepag.es',
@@ -12,8 +12,7 @@ export const indexRelays = [
 	'wss://relay.damus.io'
 ];
 
-export async function publishProfile(sk: Uint8Array, metadata: NostrUser) {
-
+export async function publishProfile(sk: Uint8Array, metadata: ProfileMetadata) {
 	const publicKey = getPublicKey(sk);
 
 	const existingProfile = await loadNostrUser({
