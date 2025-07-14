@@ -54,8 +54,10 @@ export async function publishProfile(sk: Uint8Array, metadata: NostrUser) {
 		sk
 	);
 
+	const publishRelays = await getPublishRelays(publicKey);
+
 	// if all relays fail this will throw
-	await Promise.any(pool.publish(indexRelays, signedEvent));
+	await Promise.any(pool.publish(publishRelays, signedEvent));
 
 	// update local cache with the new values
 	loadNostrUser({ pubkey: publicKey, forceUpdate: signedEvent });
@@ -93,6 +95,13 @@ export interface RelayInfo {
 			payment_required?: boolean;
 		};
 	};
+}
+
+export async function getPublishRelays(publicKey: string): Promise<string[]> {
+	const userRelays = await fetchRelayList(publicKey);
+	const writeRelays = userRelays.filter((relay) => relay.write).map((relay) => relay.url);
+
+	return [...new Set([...indexRelays, ...writeRelays])];
 }
 
 export async function fetchRelayList(publicKey: string): Promise<RelayInfo[]> {
@@ -163,7 +172,10 @@ export async function publishRelayList(sk: Uint8Array, relays: RelayInfo[]) {
 		sk
 	);
 
-	pool.publish(indexRelays, signedEvent);
+	const publicKey = getPublicKey(sk);
+	const publishRelays = await getPublishRelays(publicKey);
+
+	pool.publish(publishRelays, signedEvent);
 	console.log('Published relay list: ' + JSON.stringify(signedEvent));
 }
 
