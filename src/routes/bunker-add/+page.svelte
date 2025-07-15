@@ -130,7 +130,7 @@
 			const newBunker: BunkerInfo = {
 				name: bunkerName || 'New Bunker',
 				url: bunkerUrl,
-				expanded: false,
+				expanded: true,
 				isRenaming: false,
 				newName: '',
 				isSaving: false

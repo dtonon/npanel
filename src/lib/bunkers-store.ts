@@ -27,7 +27,7 @@ export const bunkers = writable<BunkerInfo[]>([
 		isSaving: false
 	},
 	{
-		name: 'Test Bunker',
+		name: 'Test Jumble Dev',
 		url: 'bunker://1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b?relay=wss%3A%2F%2Fnostr.wine',
 		expanded: false,
 		isRenaming: false,
@@ -37,11 +37,17 @@ export const bunkers = writable<BunkerInfo[]>([
 ]);
 
 export function addBunker(bunker: BunkerInfo) {
-	bunkers.update(list => [...list, bunker]);
+	bunkers.update((list) => {
+		const updatedList = list.map((existingBunker) => ({
+			...existingBunker,
+			expanded: false
+		}));
+		return [...updatedList, bunker];
+	});
 }
 
 export function removeBunker(index: number) {
-	bunkers.update(list => {
+	bunkers.update((list) => {
 		list.splice(index, 1);
 		return [...list];
 	});
