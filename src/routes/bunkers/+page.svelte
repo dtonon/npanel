@@ -2,47 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { sk } from '$lib/store';
-	import { writable } from 'svelte/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
 	import SaveButton from '$lib/SaveButton.svelte';
 	import { fade } from 'svelte/transition';
-
-	type BunkerInfo = {
-		name: string;
-		url: string;
-		expanded: boolean;
-		isRenaming: boolean;
-		newName: string;
-		isSaving: boolean;
-	};
-
-	const bunkers = writable<BunkerInfo[]>([
-		{
-			name: 'Main Bunker',
-			url: 'bunker://8cfec14dc07bcc113fc447aee962af10d17eef6f7582a905f0bb1cd49904fa9a?relay=wss%3A%2F%2Fpromenade.fiatjaf.com',
-			expanded: false,
-			isRenaming: false,
-			newName: '',
-			isSaving: false
-		},
-		{
-			name: 'Backup Bunker',
-			url: 'bunker://9d2a33c45f1b6d8e7a3c2b1f0e8d9c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d?relay=wss%3A%2F%2Frelay.nostr.info',
-			expanded: false,
-			isRenaming: false,
-			newName: '',
-			isSaving: false
-		},
-		{
-			name: 'Test Bunker',
-			url: 'bunker://1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b?relay=wss%3A%2F%2Fnostr.wine',
-			expanded: false,
-			isRenaming: false,
-			newName: '',
-			isSaving: false
-		}
-	]);
+	import { bunkers, type BunkerInfo } from '$lib/bunkers-store';
 
 	let isLoading = true;
 	let showCopyToast = false;
@@ -61,6 +25,11 @@
 			isLoading = false;
 		}, 500);
 	});
+
+	function addNewBunker() {
+		if (anyRenaming) return;
+		goto('/bunker-add');
+	}
 
 	function toggleBunkerExpansion(index: number) {
 		if (anyRenaming) return;
@@ -354,7 +323,7 @@
 				<!-- Add Bunker Button -->
 				<div class="flex justify-end pt-4">
 					<button
-						on:click={() => !anyRenaming && goto('/bunker-add')}
+						on:click={addNewBunker}
 						disabled={anyRenaming}
 						class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
 							anyRenaming
