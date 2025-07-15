@@ -183,7 +183,7 @@
 		}
 	}
 
-	function autofocus(node) {
+	function autofocus(node: HTMLElement) {
 		node.focus();
 	}
 </script>

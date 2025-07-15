@@ -1,8 +1,8 @@
-import { type NostrEvent } from '@nostr/tools';
 import { finalizeEvent } from '@nostr/tools/pure';
 import { getPublicKey } from 'nostr-tools';
 import { pool } from '@nostr/gadgets/global';
 import { SimplePool } from 'nostr-tools/pool';
+import { loadNostrUser, type ProfileMetadata } from '@nostr/gadgets/metadata';
 
 export const indexRelays = [
 	'wss://purplepag.es',
@@ -12,35 +12,36 @@ export const indexRelays = [
 	'wss://relay.damus.io'
 ];
 
-export async function fetchProfile(publicKey: string): Promise<Record<string, any> | null> {
-	const pool = new SimplePool();
-
-	try {
-		const event = await pool.get(indexRelays, {
-			kinds: [0],
-			authors: [publicKey],
-			limit: 1
-		});
-
-		if (!event) {
-			return null;
-		}
-
-		const metadata = JSON.parse(event.content);
-		return metadata;
-	} catch (error) {
-		console.error('Failed to fetch profile:', error);
-		throw error;
-	}
-}
-
-export async function publishProfile(sk: Uint8Array, metadata: any) {
+export async function publishProfile(sk: Uint8Array, metadata: ProfileMetadata) {
 	const publicKey = getPublicKey(sk);
 
-	const existingProfile = await fetchProfile(publicKey);
+	const existingProfile = await loadNostrUser({
+		pubkey: publicKey,
+		forceUpdate: true
+	});
 
 	// Merge existing metadata with updated values, giving priority to new values
-	const mergedMetadata = existingProfile ? { ...existingProfile, ...metadata } : metadata;
+	const mergedMetadata = existingProfile.metadata
+		? {
+				...Object.fromEntries(
+					Object.entries(existingProfile.metadata).filter(
+						([k, v]) =>
+							[
+								'name',
+								'picture',
+								'about',
+								'display_name',
+								'website',
+								'birthday',
+								'nip05',
+								'lud16',
+								'banner'
+							].includes(k) && v
+					)
+				),
+				...metadata
+			}
+		: metadata;
 
 	const signedEvent = finalizeEvent(
 		{
@@ -51,7 +52,15 @@ export async function publishProfile(sk: Uint8Array, metadata: any) {
 		},
 		sk
 	);
-	pool.publish(indexRelays, signedEvent);
+
+	const publishRelays = await getPublishRelays(publicKey);
+
+	// if all relays fail this will throw
+	await Promise.any(pool.publish(publishRelays, signedEvent));
+
+	// update local cache with the new values
+	loadNostrUser({ pubkey: publicKey, forceUpdate: signedEvent });
+
 	console.log('Published ' + JSON.stringify(signedEvent));
 }
 
@@ -85,6 +94,13 @@ export interface RelayInfo {
 			payment_required?: boolean;
 		};
 	};
+}
+
+export async function getPublishRelays(publicKey: string): Promise<string[]> {
+	const userRelays = await fetchRelayList(publicKey);
+	const writeRelays = userRelays.filter((relay) => relay.write).map((relay) => relay.url);
+
+	return [...new Set([...indexRelays, ...writeRelays])];
 }
 
 export async function fetchRelayList(publicKey: string): Promise<RelayInfo[]> {
@@ -155,7 +171,10 @@ export async function publishRelayList(sk: Uint8Array, relays: RelayInfo[]) {
 		sk
 	);
 
-	pool.publish(indexRelays, signedEvent);
+	const publicKey = getPublicKey(sk);
+	const publishRelays = await getPublishRelays(publicKey);
+
+	pool.publish(publishRelays, signedEvent);
 	console.log('Published relay list: ' + JSON.stringify(signedEvent));
 }
 

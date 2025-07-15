@@ -14,7 +14,7 @@
 		{ id: 'profile', label: 'Profile', path: '/profile' },
 		{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' },
 		{ id: 'relays', label: 'Relays', path: '/relays' },
-		{ id: 'backup', label: 'Backup', path: '/backup' }
+		{ id: 'backup', label: 'Backup key', path: '/backup' }
 	];
 
 	function handleMenuClick(item: { id: string; label: string; path: string }) {

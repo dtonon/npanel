@@ -10,13 +10,15 @@
 	import Menu from '$lib/Menu.svelte';
 	import { sk, picture } from '$lib/store';
 	import { getPublicKey } from 'nostr-tools';
-	import { fetchProfile, publishProfile } from '$lib/actions';
+	import { publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
 	import { base64 } from '@scure/base';
 	import { bytesToHex } from '@noble/hashes/utils';
 	import { sha256 } from '@noble/hashes/sha256';
 	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
+	import { loadNostrUser } from '@nostr/gadgets/metadata';
 
+	let isLoading = true;
 	let name = '';
 	let about = '';
 	let website = '';
@@ -75,8 +77,6 @@
 	function handleBeforeUnload(event: BeforeUnloadEvent) {
 		if (isFormModified && saveProgress === 0) {
 			event.preventDefault();
-			// Most modern browsers ignore custom messages and show their own
-			event.returnValue = '';
 		}
 	}
 
@@ -96,16 +96,16 @@
 
 		const publicKeyHex = getPublicKey($sk);
 
-		const userProfile = await fetchProfile(publicKeyHex);
+		const userProfile = await loadNostrUser({ pubkey: publicKeyHex, forceUpdate: true });
 		console.log('userProfile', userProfile);
 		if (userProfile) {
-			name = userProfile.name || '';
-			$picture = userProfile.picture || '';
-			originalPicture = userProfile.picture || '';
-			about = userProfile.about || '';
-			website = userProfile.website || '';
-			nip05 = userProfile.nip05 || '';
-			lud16 = userProfile.lud16 || '';
+			name = userProfile.metadata.name || '';
+			$picture = userProfile.metadata.picture || '';
+			originalPicture = userProfile.metadata.picture || '';
+			about = userProfile.metadata.about || '';
+			website = userProfile.metadata.website || '';
+			nip05 = userProfile.metadata.nip05 || '';
+			lud16 = userProfile.metadata.lud16 || '';
 
 			// Store original values
 			originalName = name;
@@ -123,6 +123,7 @@
 			if (lud16) {
 				checkLud16Validation();
 			}
+			isLoading = false;
 		}
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
@@ -425,7 +426,7 @@
 			uploading = false;
 		}
 
-		publishProfile($sk, {
+		await publishProfile($sk, {
 			name: name,
 			about: about,
 			picture: $picture,
@@ -477,293 +478,300 @@
 	</div>
 
 	<div slot="interactive">
-		<div class="mb-6 flex items-end justify-end">
-			<button on:click={triggerFileInput} class="text-xl text-neutral-400 dark:text-neutral-500"
-				>Your image</button
-			>
-			<div
-				class="-mr-8 ml-2 mt-2 h-1 w-20 border-t-2 border-neutral-300 dark:border-neutral-600"
-			></div>
-			<div class="relative">
-				<button
-					on:click={triggerFileInput}
-					class="input-hover-enabled h-24 w-24 rounded-full border-2 border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800"
+		{#if isLoading}
+			<div class="flex justify-center p-8">
+				<div class="text-neutral-500">Loading profile...</div>
+			</div>
+		{:else}
+			<div class="mb-6 flex items-end justify-end">
+				<button on:click={triggerFileInput} class="text-xl text-neutral-400 dark:text-neutral-500"
+					>Your image</button
 				>
-					<!-- svelte-ignore a11y-img-redundant-alt -->
-					{#if hasImage}
-						<img
-							src={picturePreview || $picture}
-							alt="Profile Picture"
-							class="h-full w-full rounded-full object-cover"
-						/>
-					{:else}
-						<img
-							src="/icons/pfp.svg"
-							alt="Default Profile Picture"
-							class="h-full w-full rounded-full object-cover"
-						/>
-					{/if}
-				</button>
-
-				<!-- Delete/Undo button -->
-				{#if showDeleteButton}
+				<div
+					class="-mr-8 ml-2 mt-2 h-1 w-20 border-t-2 border-neutral-300 dark:border-neutral-600"
+				></div>
+				<div class="relative">
 					<button
-						on:click={deleteImage}
-						class="absolute -right-0 -top-0 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-accent dark:bg-neutral-700 dark:hover:bg-accent"
-						title={isImageDeleted ? 'Undo delete' : 'Delete image'}
+						on:click={triggerFileInput}
+						class="input-hover-enabled h-24 w-24 rounded-full border-2 border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800"
 					>
-						{#if isImageDeleted}
-							<!-- Undo icon -->
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-								/>
-							</svg>
+						<!-- svelte-ignore a11y-img-redundant-alt -->
+						{#if hasImage}
+							<img
+								src={picturePreview || $picture}
+								alt="Profile Picture"
+								class="h-full w-full rounded-full object-cover"
+							/>
 						{:else}
-							<!-- X icon -->
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
+							<img
+								src="/icons/pfp.svg"
+								alt="Default Profile Picture"
+								class="h-full w-full rounded-full object-cover"
+							/>
 						{/if}
 					</button>
-				{/if}
-			</div>
-		</div>
-		<div>
-			<!-- File input for image upload -->
-			<input type="file" id="image" accept="image/*" on:change={previewImage} class="hidden" />
-			<div class="mb-1 flex items-end justify-between">
-				{#if name !== '' && name !== undefined}<label
-						for="name"
-						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
-						>Your (nick)name</label
-					>{:else}<div></div>{/if}
-				<div class="mr-4 text-right text-xs uppercase text-neutral-500 dark:text-neutral-400">
-					Required
+
+					<!-- Delete/Undo button -->
+					{#if showDeleteButton}
+						<button
+							on:click={deleteImage}
+							class="absolute -right-0 -top-0 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-accent dark:bg-neutral-700 dark:hover:bg-accent"
+							title={isImageDeleted ? 'Undo delete' : 'Delete image'}
+						>
+							{#if isImageDeleted}
+								<!-- Undo icon -->
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+									/>
+								</svg>
+							{:else}
+								<!-- X icon -->
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 18L18 6M6 6l12 12"
+									/>
+								</svg>
+							{/if}
+						</button>
+					{/if}
 				</div>
 			</div>
-			<!-- svelte-ignore a11y-autofocus -->
-			<div class="relative mb-4">
-				<input
-					id="name"
-					type="text"
-					placeholder="Your (nick)name"
-					bind:value={name}
-					autofocus={!isMobile}
-					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-				/>
-				<!-- Help icon for nickname -->
-				<div class="nickname-help-container absolute right-3 top-1/2 -translate-y-1/2">
-					<button
-						type="button"
-						on:click={() => (showNicknameHelp = !showNicknameHelp)}
-						class="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-300 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-						title="Help about nickname"
-					>
-						<span class="text-xs font-bold">?</span>
-					</button>
-					<!-- Help tooltip -->
-					{#if showNicknameHelp}
-						<div
-							class="absolute right-0 top-8 z-10 w-80 rounded-lg border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
+			<div>
+				<!-- File input for image upload -->
+				<input type="file" id="image" accept="image/*" on:change={previewImage} class="hidden" />
+				<div class="mb-1 flex items-end justify-between">
+					{#if name !== '' && name !== undefined}<label
+							for="name"
+							class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+							>Your (nick)name</label
+						>{:else}<div></div>{/if}
+					<div class="mr-4 text-right text-xs uppercase text-neutral-500 dark:text-neutral-400">
+						Required
+					</div>
+				</div>
+				<!-- svelte-ignore a11y-autofocus -->
+				<div class="relative mb-4">
+					<input
+						id="name"
+						type="text"
+						placeholder="Your (nick)name"
+						bind:value={name}
+						autofocus={!isMobile}
+						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+					/>
+					<!-- Help icon for nickname -->
+					<div class="nickname-help-container absolute right-3 top-1/2 -translate-y-1/2">
+						<button
+							type="button"
+							on:click={() => (showNicknameHelp = !showNicknameHelp)}
+							class="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-300 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+							title="Help about nickname"
 						>
-							<div class="text-sm text-neutral-700 dark:text-neutral-300">
-								The name is not a unique username, on Nostr we can have as many Jacks we want! Feel
-								free to use your real name or a nickname; you can always change it later.
-								<br /><br />
-								But remember: online privacy matters, don't share sensitive data.
-							</div>
-							<!-- Close arrow pointing to the help icon -->
+							<span class="text-xs font-bold">?</span>
+						</button>
+						<!-- Help tooltip -->
+						{#if showNicknameHelp}
 							<div
-								class="absolute -top-2 right-3 h-4 w-4 rotate-45 border-l border-t border-neutral-200 bg-white dark:border-neutral-600 dark:bg-neutral-800"
-							></div>
+								class="absolute right-0 top-8 z-10 w-80 rounded-lg border border-neutral-200 bg-white p-4 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
+							>
+								<div class="text-sm text-neutral-700 dark:text-neutral-300">
+									The name is not a unique username, on Nostr we can have as many Jacks we want!
+									Feel free to use your real name or a nickname; you can always change it later.
+									<br /><br />
+									But remember: online privacy matters, don't share sensitive data.
+								</div>
+								<!-- Close arrow pointing to the help icon -->
+								<div
+									class="absolute -top-2 right-3 h-4 w-4 rotate-45 border-l border-t border-neutral-200 bg-white dark:border-neutral-600 dark:bg-neutral-800"
+								></div>
+							</div>
+						{/if}
+					</div>
+				</div>
+				<div class="mb-1 flex items-end justify-between">
+					{#if about !== '' && about !== undefined}<label
+							for="about"
+							class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+							>Something about you</label
+						>{:else}<div></div>{/if}
+					<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+						Optional
+					</div>
+				</div>
+				<textarea
+					id="about"
+					placeholder="Something about you"
+					bind:value={about}
+					class="input-hover-enabled mb-4 block w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+				></textarea>
+				<div class="mb-1 flex items-end justify-between">
+					{#if website !== '' && website !== undefined}<label
+							for="website"
+							class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">Website</label
+						>{:else}<div></div>{/if}
+					<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+						Optional
+					</div>
+				</div>
+				<input
+					type="text"
+					placeholder="Website"
+					bind:value={website}
+					class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+				/>
+				<div class="mb-1 flex items-end justify-between">
+					{#if nip05 !== '' && nip05 !== undefined}<label
+							for="nip05"
+							class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+							>NIP05 Address</label
+						>{:else}<div></div>{/if}
+					<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+						Optional
+					</div>
+				</div>
+				<div class="relative mb-4">
+					<input
+						type="text"
+						placeholder="NIP05 Address"
+						bind:value={nip05}
+						on:input={debouncedNip05Validation}
+						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+					/>
+					{#if nip05.trim() && nip05ValidStatus}
+						<div class="absolute right-3 top-1/2 -translate-y-1/2">
+							{#if nip05ValidStatus === 'loading'}
+								<!-- Loading spinner -->
+								<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+							{:else if nip05ValidStatus === 'valid'}
+								<!-- Valid checkmark -->
+								<svg
+									class="h-5 w-5 text-emerald-500"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									></path>
+								</svg>
+							{:else if nip05ValidStatus === 'invalid'}
+								<!-- Invalid alert circle with exclamation -->
+								<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+									<circle cx="12" cy="12" r="10"></circle>
+									<path
+										fill="white"
+										d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+									></path>
+								</svg>
+							{/if}
 						</div>
 					{/if}
 				</div>
-			</div>
-			<div class="mb-1 flex items-end justify-between">
-				{#if about !== '' && about !== undefined}<label
-						for="about"
-						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
-						>Something about you</label
-					>{:else}<div></div>{/if}
-				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
-					Optional
+				<div class="mb-1 flex items-end justify-between">
+					{#if lud16 !== '' && lud16 !== undefined}<label
+							for="lud16"
+							class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
+							>LN Address</label
+						>{:else}<div></div>{/if}
+					<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
+						Optional
+					</div>
 				</div>
-			</div>
-			<textarea
-				id="about"
-				placeholder="Something about you"
-				bind:value={about}
-				class="input-hover-enabled mb-4 block w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-			></textarea>
-			<div class="mb-1 flex items-end justify-between">
-				{#if website !== '' && website !== undefined}<label
-						for="website"
-						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">Website</label
-					>{:else}<div></div>{/if}
-				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
-					Optional
-				</div>
-			</div>
-			<input
-				type="text"
-				placeholder="Website"
-				bind:value={website}
-				class="input-hover-enabled mb-4 w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-			/>
-			<div class="mb-1 flex items-end justify-between">
-				{#if nip05 !== '' && nip05 !== undefined}<label
-						for="nip05"
-						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300"
-						>NIP05 Address</label
-					>{:else}<div></div>{/if}
-				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
-					Optional
-				</div>
-			</div>
-			<div class="relative mb-4">
-				<input
-					type="text"
-					placeholder="NIP05 Address"
-					bind:value={nip05}
-					on:input={debouncedNip05Validation}
-					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-				/>
-				{#if nip05.trim() && nip05ValidStatus}
-					<div class="absolute right-3 top-1/2 -translate-y-1/2">
-						{#if nip05ValidStatus === 'loading'}
-							<!-- Loading spinner -->
-							<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
+				<div class="relative">
+					<input
+						type="text"
+						placeholder="LN Address"
+						bind:value={lud16}
+						on:input={debouncedLud16Validation}
+						class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+					/>
+					{#if lud16.trim() && lud16ValidStatus}
+						<div class="absolute right-3 top-1/2 -translate-y-1/2">
+							{#if lud16ValidStatus === 'loading'}
+								<!-- Loading spinner -->
+								<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
+								</svg>
+							{:else if lud16ValidStatus === 'valid'}
+								<!-- Valid checkmark -->
+								<svg
+									class="h-5 w-5 text-emerald-500"
+									fill="none"
 									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path
-									class="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								></path>
-							</svg>
-						{:else if nip05ValidStatus === 'valid'}
-							<!-- Valid checkmark -->
-							<svg
-								class="h-5 w-5 text-emerald-500"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								></path>
-							</svg>
-						{:else if nip05ValidStatus === 'invalid'}
-							<!-- Invalid alert circle with exclamation -->
-							<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
-								<circle cx="12" cy="12" r="10"></circle>
-								<path
-									fill="white"
-									d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
-								></path>
-							</svg>
-						{/if}
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									></path>
+								</svg>
+							{:else if lud16ValidStatus === 'invalid'}
+								<!-- Invalid alert circle with exclamation -->
+								<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
+									<circle cx="12" cy="12" r="10"></circle>
+									<path
+										fill="white"
+										d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+									></path>
+								</svg>
+							{/if}
+						</div>
+					{/if}
+				</div>
+				{#if uploading && saveProgress > 0 && saveProgress < 100}
+					<div class="mt-6">
+						<LoadingBar progress={saveProgress} />
 					</div>
 				{/if}
 			</div>
-			<div class="mb-1 flex items-end justify-between">
-				{#if lud16 !== '' && lud16 !== undefined}<label
-						for="lud16"
-						class="ml-4 text-xs uppercase text-neutral-700 dark:text-neutral-300">LN Address</label
-					>{:else}<div></div>{/if}
-				<div class="mr-4 text-right text-xs uppercase text-neutral-400 dark:text-neutral-600">
-					Optional
-				</div>
-			</div>
-			<div class="relative">
-				<input
-					type="text"
-					placeholder="LN Address"
-					bind:value={lud16}
-					on:input={debouncedLud16Validation}
-					class="input-hover-enabled w-full rounded border-2 border-neutral-300 bg-white px-4 py-2 pr-12 text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+			<div class="mt-16 flex justify-center sm:justify-end">
+				<SaveButton
+					onClick={saveProfile}
+					disabled={!name}
+					text={saveProgress > 0 && saveProgress < 100 ? 'Saving...' : 'Save'}
+					okText="Saved"
+					isSaving={saveProgress > 0 && saveProgress < 100}
+					isModified={isFormModified}
 				/>
-				{#if lud16.trim() && lud16ValidStatus}
-					<div class="absolute right-3 top-1/2 -translate-y-1/2">
-						{#if lud16ValidStatus === 'loading'}
-							<!-- Loading spinner -->
-							<svg class="h-5 w-5 animate-spin text-neutral-400" fill="none" viewBox="0 0 24 24">
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path
-									class="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								></path>
-							</svg>
-						{:else if lud16ValidStatus === 'valid'}
-							<!-- Valid checkmark -->
-							<svg
-								class="h-5 w-5 text-emerald-500"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								></path>
-							</svg>
-						{:else if lud16ValidStatus === 'invalid'}
-							<!-- Invalid alert circle with exclamation -->
-							<svg class="h-5 w-5 text-accent" fill="currentColor" viewBox="0 0 24 24">
-								<circle cx="12" cy="12" r="10"></circle>
-								<path
-									fill="white"
-									d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
-								></path>
-							</svg>
-						{/if}
-					</div>
-				{/if}
 			</div>
-			{#if uploading && saveProgress > 0 && saveProgress < 100}
-				<div class="mt-6">
-					<LoadingBar progress={saveProgress} />
-				</div>
-			{/if}
-		</div>
-		<div class="mt-16 flex justify-center sm:justify-end">
-			<SaveButton
-				onClick={saveProfile}
-				disabled={!name}
-				text={saveProgress > 0 && saveProgress < 100 ? 'Saving...' : 'Save'}
-				okText="Saved"
-				isSaving={saveProgress > 0 && saveProgress < 100}
-				isModified={isFormModified}
-			/>
-		</div>
+		{/if}
 	</div>
 </TwoColumnLayout>
