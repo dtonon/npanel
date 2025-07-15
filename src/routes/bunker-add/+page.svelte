@@ -169,7 +169,7 @@
 						class="break-words text-[3.5rem] leading-[1em] text-black dark:text-white sm:h-auto sm:text-[3.5rem]"
 						id="tw"
 					>
-						ADD BUNKER
+						BUNKERS
 					</div>
 				</h1>
 			</div>
@@ -267,7 +267,8 @@
 							</div>
 							{#if threshold == total}
 								<div class="mt-2">
-									<em>All selected signers will need to sign every event.</em>
+									<strong>Warning</strong>: this scheme is risky, if one of the signers is offline,
+									the events will not be able to be signed.
 								</div>
 							{/if}
 						</div>
