@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getPublicKey } from 'nostr-tools';
+	import { getPublicKey } from '@nostr/tools/pure';
 	import { sk } from '$lib/store';
 	import { writable } from 'svelte/store';
 	import { fetchRelayList, publishRelayList, type RelayInfo } from '$lib/actions';

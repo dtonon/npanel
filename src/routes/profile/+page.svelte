@@ -9,7 +9,7 @@
 	import { isMobile } from '$lib/mobile';
 	import Menu from '$lib/Menu.svelte';
 	import { sk, picture } from '$lib/store';
-	import { getPublicKey } from 'nostr-tools';
+	import { getPublicKey } from '@nostr/tools/pure';
 	import { publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
 	import { base64 } from '@scure/base';

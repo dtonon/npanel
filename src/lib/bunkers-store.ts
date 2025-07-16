@@ -1,54 +1,104 @@
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
+import type { SubCloser } from '@nostr/tools/abstract-pool';
+import { finalizeEvent } from '@nostr/tools/pure';
+import { pool } from '@nostr/gadgets/global';
+import { pk, sk } from './store';
+import { coordinators } from './utils';
+import { normalizeURL } from '@nostr/tools/utils';
 
 export type BunkerInfo = {
+	root: boolean;
 	name: string;
-	url: string;
+	uri: string;
+	restrictions: string;
 	expanded: boolean;
 	isRenaming: boolean;
 	newName: string;
 	isSaving: boolean;
 };
 
-export const bunkers = writable<BunkerInfo[]>([
-	{
-		name: 'Main Bunker',
-		url: 'bunker://8cfec14dc07bcc113fc447aee962af10d17eef6f7582a905f0bb1cd49904fa9a?relay=wss%3A%2F%2Fpromenade.fiatjaf.com',
-		expanded: false,
-		isRenaming: false,
-		newName: '',
-		isSaving: false
-	},
-	{
-		name: 'Backup Bunker',
-		url: 'bunker://9d2a33c45f1b6d8e7a3c2b1f0e8d9c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d?relay=wss%3A%2F%2Frelay.nostr.info',
-		expanded: false,
-		isRenaming: false,
-		newName: '',
-		isSaving: false
-	},
-	{
-		name: 'Test Jumble Dev',
-		url: 'bunker://1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b?relay=wss%3A%2F%2Fnostr.wine',
-		expanded: false,
-		isRenaming: false,
-		newName: '',
-		isSaving: false
+export const coordinator = writable<string>(normalizeURL(coordinators[0]));
+
+export const bunkers = writable<null | BunkerInfo[]>(null);
+
+let subc: SubCloser;
+derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
+	([coord, pk, sk]) => {
+		if (subc) {
+			subc.close();
+		}
+
+		if (!pk || !sk || !coord) {
+			bunkers.set([]);
+			return;
+		}
+
+		subc = pool.subscribe(
+			[coord],
+			{
+				authors: [pk],
+				kinds: [16430],
+				limit: 1
+			},
+			{
+				doauth(event) {
+					return finalizeEvent(event, sk);
+				},
+				oneose() {
+					bunkers.update((current) => {
+						if (current === null) return [];
+						return current;
+					});
+				},
+				onevent(evt) {
+					bunkers.update((current) => {
+						bunkers.set(null); // preemptively set to null in case this event is broken
+
+						const h = evt.tags.find((t) => t[0] === 'h')?.[1];
+						if (!h) return;
+						const items = [
+							{
+								root: true,
+								name: '',
+								uri: `bunker://${h}?relay=${encodeURIComponent(coord)}`,
+								restrictions: '',
+								expanded: false,
+								isRenaming: false,
+								isSaving: false,
+								newName: ''
+							}
+						];
+
+						for (let i = 0; i < evt.tags.length; i++) {
+							const tag = evt.tags[i];
+							if (tag[0] === 'profile') {
+								const name = tag[1];
+								const secret = tag[2];
+								const restrictions = tag[3];
+								const uri = `bunker://${h}?relay=${encodeURIComponent(coord)}&secret=${secret}`;
+
+								items.push({
+									// inherit renaming state from previous state
+									...((current || []).find((b) => b.uri === uri) ?? {
+										isRenaming: false,
+										expanded: false
+									}),
+
+									name,
+									restrictions,
+									uri,
+									root: false,
+
+									newName: '',
+									isSaving: false
+								});
+							}
+						}
+
+						return items;
+					});
+				}
+			}
+		);
 	}
-]);
-
-export function addBunker(bunker: BunkerInfo) {
-	bunkers.update((list) => {
-		const updatedList = list.map((existingBunker) => ({
-			...existingBunker,
-			expanded: false
-		}));
-		return [...updatedList, bunker];
-	});
-}
-
-export function removeBunker(index: number) {
-	bunkers.update((list) => {
-		list.splice(index, 1);
-		return [...list];
-	});
-}
+);

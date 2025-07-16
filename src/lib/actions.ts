@@ -1,8 +1,8 @@
-import { finalizeEvent } from '@nostr/tools/pure';
-import { getPublicKey } from 'nostr-tools';
+import { finalizeEvent, getPublicKey } from '@nostr/tools/pure';
+import { fetchRelayInformation, type RelayInformation } from '@nostr/tools/nip11';
 import { pool } from '@nostr/gadgets/global';
-import { SimplePool } from 'nostr-tools/pool';
 import { loadNostrUser, type ProfileMetadata } from '@nostr/gadgets/metadata';
+import { loadRelayList, type RelayItem } from '@nostr/gadgets/lists';
 
 export const indexRelays = [
 	'wss://purplepag.es',
@@ -68,80 +68,32 @@ export async function clearSession() {
 	sessionStorage.clear();
 }
 
-export interface RelayInfo {
-	url: string;
-	read: boolean;
-	write: boolean;
+export type RelayInfo = {
+	spec: RelayItem;
 	expanded?: boolean;
-	nip11?: {
-		name?: string;
-		description?: string;
-		pubkey?: string;
-		contact?: string;
-		supported_nips?: number[];
-		software?: string;
-		version?: string;
-		limitation?: {
-			max_message_length?: number;
-			max_subscriptions?: number;
-			max_filters?: number;
-			max_limit?: number;
-			max_subid_length?: number;
-			max_event_tags?: number;
-			max_content_length?: number;
-			min_pow_difficulty?: number;
-			auth_required?: boolean;
-			payment_required?: boolean;
-		};
-	};
-}
+	nip11: RelayInformation;
+};
 
 export async function getPublishRelays(publicKey: string): Promise<string[]> {
 	const userRelays = await fetchRelayList(publicKey);
-	const writeRelays = userRelays.filter((relay) => relay.write).map((relay) => relay.url);
+	const writeRelays = userRelays.filter((relay) => relay.spec.write).map((relay) => relay.spec.url);
 
 	return [...new Set([...indexRelays, ...writeRelays])];
 }
 
 export async function fetchRelayList(publicKey: string): Promise<RelayInfo[]> {
-	const pool = new SimplePool();
-
 	try {
-		const event = await pool.get(indexRelays, {
-			kinds: [10002],
-			authors: [publicKey],
-			limit: 1
-		});
+		const rl = await loadRelayList(publicKey, [], true);
 
-		if (!event) {
-			return [];
-		}
-
+		// fetch NIP-11 info for each relay
 		const relays: RelayInfo[] = [];
-		for (const tag of event.tags) {
-			if (tag[0] === 'r' && tag[1]) {
-				const url = tag[1];
-				const marker = tag[2];
-
-				if (marker === 'read') {
-					relays.push({ url, read: true, write: false });
-				} else if (marker === 'write') {
-					relays.push({ url, read: false, write: true });
-				} else {
-					relays.push({ url, read: true, write: true });
-				}
-			}
+		for (let i = 0; i < rl.items.length; i++) {
+			fetchRelayInformation(rl.items[i].url).then((nip11) => {
+				relays[i] = { spec: rl.items[i], nip11 };
+			});
 		}
 
-		// Fetch NIP-11 info for each relay
-		const relaysWithNip11 = await Promise.all(
-			relays.map(async (relay) => {
-				const nip11 = await fetchRelayNip11Info(relay.url);
-				return { ...relay, nip11 };
-			})
-		);
-
-		return relaysWithNip11;
+		return relays;
 	} catch (error) {
 		console.error('Failed to fetch relay list:', error);
 		return [];
@@ -152,12 +104,12 @@ export async function publishRelayList(sk: Uint8Array, relays: RelayInfo[]) {
 	const tags: string[][] = [];
 
 	for (const relay of relays) {
-		if (relay.read && relay.write) {
-			tags.push(['r', relay.url]);
-		} else if (relay.read) {
-			tags.push(['r', relay.url, 'read']);
-		} else if (relay.write) {
-			tags.push(['r', relay.url, 'write']);
+		if (relay.spec.read && relay.spec.write) {
+			tags.push(['r', relay.spec.url]);
+		} else if (relay.spec.read) {
+			tags.push(['r', relay.spec.url, 'read']);
+		} else if (relay.spec.write) {
+			tags.push(['r', relay.spec.url, 'write']);
 		}
 	}
 
@@ -176,26 +128,6 @@ export async function publishRelayList(sk: Uint8Array, relays: RelayInfo[]) {
 
 	pool.publish(publishRelays, signedEvent);
 	console.log('Published relay list: ' + JSON.stringify(signedEvent));
-}
 
-export async function fetchRelayNip11Info(relayUrl: string): Promise<RelayInfo['nip11']> {
-	try {
-		const httpUrl = relayUrl.replace('ws://', 'http://').replace('wss://', 'https://');
-		const response = await fetch(httpUrl, {
-			method: 'GET',
-			headers: {
-				Accept: 'application/nostr+json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-		}
-
-		const nip11Data = await response.json();
-		return nip11Data;
-	} catch (error) {
-		console.error(`Failed to fetch NIP-11 info for ${relayUrl}:`, error);
-		return undefined;
-	}
+	loadRelayList(signedEvent.pubkey, [], signedEvent);
 }

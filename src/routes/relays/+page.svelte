@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getPublicKey } from 'nostr-tools';
+	import { getPublicKey } from '@nostr/tools/pure';
 	import { sk } from '$lib/store';
 	import { writable } from 'svelte/store';
-	import { fetchRelayList, publishRelayList, type RelayInfo } from '$lib/actions';
+	import { fetchRelayList, publishRelayList } from '$lib/actions';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
 
@@ -44,9 +44,9 @@
 	async function toggleRelayPermission(index: number, permission: 'read' | 'write') {
 		relays.update((list) => {
 			if (permission === 'read') {
-				list[index].read = !list[index].read;
+				list[index].spec.read = !list[index].spec.read;
 			} else {
-				list[index].write = !list[index].write;
+				list[index].spec.write = !list[index].spec.write;
 			}
 			return [...list];
 		});
@@ -135,12 +135,12 @@
 							>
 								<div class="flex-1">
 									<div
-										class="text-xl text-black dark:text-white {relay.read || relay.write
+										class="text-xl text-black dark:text-white {relay.spec.read || relay.spec.write
 											? 'text-black dark:text-white'
 											: 'text-neutral-400'}"
 									>
-										{relay.url}
-										{#if !relay.read && !relay.write}
+										{relay.spec.url}
+										{#if !relay.spec.read && !relay.spec.write}
 											<svg
 												class="inline h-5 w-5 text-accent"
 												fill="currentColor"
@@ -164,7 +164,7 @@
 										title="Toggle read permission"
 									>
 										<div
-											class="h-5 w-5 {relay.read
+											class="h-5 w-5 {relay.spec.read
 												? 'text-black dark:text-white'
 												: 'text-neutral-400'}"
 										>
@@ -179,7 +179,7 @@
 										title="Toggle write permission"
 									>
 										<div
-											class="h-5 w-5 {relay.write
+											class="h-5 w-5 {relay.spec.write
 												? 'text-black dark:text-white'
 												: 'text-neutral-400'}"
 										>
@@ -195,7 +195,7 @@
 									class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:border-neutral-400 dark:bg-neutral-800"
 								>
 									<div class="space-y-3">
-										{#if !relay.read && !relay.write}
+										{#if !relay.spec.read && !relay.spec.write}
 											<div class="mb-3 text-sm text-accent">
 												The relay has both Read and Write flags disabled, so it has been removed
 												from the list and it will not be available in the next refresh; enable one

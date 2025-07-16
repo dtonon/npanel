@@ -4,6 +4,7 @@
 	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 	import { picture } from '$lib/store';
 	import { clearSession } from '$lib/actions';
+	import { pool } from '@nostr/gadgets/global';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
@@ -24,6 +25,10 @@
 	}
 
 	function handleLogout() {
+		// disconnect from all relays because we may have authenticated to any and we must reset that
+		for (let [url] of pool.listConnectionStatus()) {
+			pool.close([url]);
+		}
 		clearSession();
 		goto('/');
 	}
