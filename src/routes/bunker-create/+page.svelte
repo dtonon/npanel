@@ -5,7 +5,7 @@
 	import { pk, sk } from '$lib/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
-	import { coordinator } from '$lib/bunkers-store';
+	import { bunkerEvent, coordinator } from '$lib/bunkers-store';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
 	import { pool } from '@nostr/gadgets/global';
 	import { loadRelayList } from '@nostr/gadgets/lists';
@@ -100,24 +100,6 @@
 		}
 	});
 
-	function generateRandomBunkerUrl(): string {
-		const chars = 'abcdef0123456789';
-		let pubkey = '';
-		for (let i = 0; i < 64; i++) {
-			pubkey += chars.charAt(Math.floor(Math.random() * chars.length));
-		}
-
-		const relays = [
-			'wss://promenade.fiatjaf.com',
-			'wss://relay.nostr.info',
-			'wss://nostr.wine',
-			'wss://relay.damus.io'
-		];
-		const randomRelay = relays[Math.floor(Math.random() * relays.length)];
-
-		return `bunker://${pubkey}?relay=${encodeURIComponent(randomRelay)}`;
-	}
-
 	async function activate(event: Event) {
 		event.preventDefault();
 		bunkerActivating = true;
@@ -135,7 +117,7 @@
 		]);
 
 		try {
-			let uri = shardGetBunker(
+			let account = await shardGetBunker(
 				pool,
 				$sk,
 				$pk,
@@ -152,7 +134,9 @@
 				}
 			);
 
-			console.log(`Created root bunker with URI ${uri}`);
+			console.log(`Created root bunker`);
+			bunkerEvent.set(account);
+
 			bunkerActivating = false;
 
 			goto('/bunkers');
@@ -162,10 +146,6 @@
 		}
 
 		clearInterval(intv);
-	}
-
-	function autofocus(node: HTMLInputElement) {
-		node.focus();
 	}
 </script>
 

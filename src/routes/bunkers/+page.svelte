@@ -6,16 +6,17 @@
 	import Menu from '$lib/Menu.svelte';
 	import SaveButton from '$lib/SaveButton.svelte';
 	import { fade } from 'svelte/transition';
-	import { bunkers, coordinator } from '$lib/bunkers-store';
+	import { bunkerEvent, profiles, coordinator } from '$lib/bunkers-store';
 	import { cleanURL } from '$lib/utils';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
+	import { updateBunker } from '$lib/actions';
 
 	let advanced = false;
 	let showCopyToast = false;
 	let copyToastMessage = '';
 	let copyToastPosition = { x: 0, y: 0 };
 
-	$: anyRenaming = $bunkers?.some?.((bunker) => bunker.isRenaming);
+	$: anyRenaming = $profiles.some?.((bunker) => bunker.isRenaming);
 
 	onMount(() => {
 		if ($sk.length === 0) {
@@ -27,7 +28,7 @@
 	function addNewBunker() {
 		if (anyRenaming) return;
 
-		if ($bunkers?.length) {
+		if ($profiles.length) {
 			// this page will just modify our record with the coordinator
 			goto('/bunker-add');
 		} else {
@@ -39,48 +40,55 @@
 	function toggleBunkerExpansion(index: number) {
 		if (anyRenaming) return;
 
-		bunkers.update((list) => {
-			return list!.map((bunker, i) => ({
-				...bunker,
-				expanded: i === index ? !bunker.expanded : false
+		profiles.update((list) => {
+			return list.map((prf, i) => ({
+				...prf,
+				expanded: i === index ? !prf.expanded : false
 			}));
 		});
 	}
 
 	function startRename(index: number) {
-		bunkers.update((list) => {
-			list![index].isRenaming = true;
-			list![index].newName = list![index].name;
-			return [...list!];
+		profiles.update((list) => {
+			list[index].isRenaming = true;
+			list[index].newName = list[index].name;
+			return [...list];
 		});
 	}
 
 	function cancelRename(index: number) {
-		bunkers.update((list) => {
-			list![index].isRenaming = false;
-			list![index].newName = '';
-			list![index].isSaving = false;
-			return [...list!];
+		profiles.update((list) => {
+			list[index].isRenaming = false;
+			list[index].newName = '';
+			list[index].isSaving = false;
+			return [...list];
 		});
 	}
 
 	function saveRename(index: number) {
-		bunkers.update((list) => {
-			list![index].isSaving = true;
-			return [...list!];
+		profiles.update((list) => {
+			list[index].name = list[index].newName;
+			list[index].newName = '';
+			list[index].isSaving = true;
+			return [...list];
 		});
 
-		// TODO
+		updateBunker();
 	}
 
 	function removeBunker(index: number) {
-		const bunkerName = $bunkers![index].name;
+		const bunkerName = $profiles[index].name;
 		if (
 			confirm(
 				`Are you sure you want to revoke and delete the bunker "${bunkerName}"?\nAll apps that use it will stop working.\nThis action cannot be undone.`
 			)
 		) {
-			// TODO
+			profiles.update((list) => {
+				list.splice(index, 1);
+				return [...list];
+			});
+
+			updateBunker();
 		}
 	}
 
@@ -140,7 +148,7 @@
 	</div>
 
 	<div slot="interactive">
-		{#if $bunkers === null}
+		{#if $bunkerEvent === null}
 			<div class="flex justify-center p-8">
 				<div class="text-neutral-500">Loading bunkers...</div>
 			</div>
@@ -154,7 +162,7 @@
 				<div class="mt-2">
 					<button class="text-accent hover:underline">Learn more</button> about bunkers.
 				</div>
-				{#if $bunkers?.length === 0}
+				{#if $bunkerEvent === null}
 					<div class="mt-2">
 						{#if !advanced}
 							Not using <span class="text-sm italic">{cleanURL($coordinator)}</span>?
@@ -172,7 +180,7 @@
 				{/if}
 
 				<div class="space-y-3">
-					{#each $bunkers || [] as bunker, index}
+					{#each $profiles as bunker, index}
 						<div
 							class={`overflow-hidden rounded border-2 ${
 								bunker.expanded
@@ -221,15 +229,7 @@
 									</div>
 								{:else}
 									<div class="flex-1 px-4 py-2 text-xl text-black dark:text-white">
-										{#if bunker.root}
-											<span
-												class="font-mono italic"
-												title="This bunker is totally unrestricted and can sign anything."
-												>MASTER</span
-											>
-										{:else}
-											{bunker.name}
-										{/if}
+										{bunker.name}
 									</div>
 									<!-- Copy URL Button -->
 									<div class="flex items-center space-x-2 p-2">
@@ -288,7 +288,7 @@
 														</svg>
 														<span>Cancel rename</span>
 													</button>
-												{:else if !bunker.root}
+												{:else}
 													<button
 														on:click={() => startRename(index)}
 														class="flex items-center space-x-1 text-sm text-accent transition-colors hover:underline"

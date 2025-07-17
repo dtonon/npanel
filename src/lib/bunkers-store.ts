@@ -1,15 +1,14 @@
 import { derived, writable } from 'svelte/store';
 import type { SubCloser } from '@nostr/tools/abstract-pool';
-import { finalizeEvent } from '@nostr/tools/pure';
+import { finalizeEvent, type NostrEvent } from '@nostr/tools/pure';
 import { pool } from '@nostr/gadgets/global';
 import { pk, sk } from './store';
 import { coordinators } from './utils';
 import { normalizeURL } from '@nostr/tools/utils';
 
-export type BunkerInfo = {
-	root: boolean;
+export type BunkerProfile = {
+	readonly uri: string;
 	name: string;
-	uri: string;
 	restrictions: string;
 	expanded: boolean;
 	isRenaming: boolean;
@@ -18,8 +17,8 @@ export type BunkerInfo = {
 };
 
 export const coordinator = writable<string>(normalizeURL(coordinators[0]));
-
-export const bunkers = writable<null | BunkerInfo[]>(null);
+export const bunkerEvent = writable<null | NostrEvent>(null);
+export const profiles = writable<BunkerProfile[]>([]);
 
 let subc: SubCloser;
 derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
@@ -29,7 +28,7 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 		}
 
 		if (!pk || !sk || !coord) {
-			bunkers.set([]);
+			profiles.set([]);
 			return;
 		}
 
@@ -45,30 +44,19 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 					return finalizeEvent(event, sk);
 				},
 				oneose() {
-					bunkers.update((current) => {
+					profiles.update((current) => {
 						if (current === null) return [];
 						return current;
 					});
 				},
 				onevent(evt) {
-					bunkers.update((current) => {
-						bunkers.set(null); // preemptively set to null in case this event is broken
+					bunkerEvent.set(null); // preemptively set to null in case this event is broken
 
+					profiles.update((current) => {
 						const h = evt.tags.find((t) => t[0] === 'h')?.[1];
-						if (!h) return;
-						const items = [
-							{
-								root: true,
-								name: '',
-								uri: `bunker://${h}?relay=${encodeURIComponent(coord)}`,
-								restrictions: '',
-								expanded: false,
-								isRenaming: false,
-								isSaving: false,
-								newName: ''
-							}
-						];
+						if (!h) return [];
 
+						const items = [];
 						for (let i = 0; i < evt.tags.length; i++) {
 							const tag = evt.tags[i];
 							if (tag[0] === 'profile') {
@@ -87,7 +75,6 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 									name,
 									restrictions,
 									uri,
-									root: false,
 
 									newName: '',
 									isSaving: false

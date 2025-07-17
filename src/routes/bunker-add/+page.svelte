@@ -1,11 +1,18 @@
 <script lang="ts">
-	import { onMount, afterUpdate } from 'svelte';
+	import { onMount } from 'svelte';
+	import { base32 } from '@scure/base';
 	import { goto } from '$app/navigation';
 	import { sk } from '$lib/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
+	import { bunkerEvent, coordinator, profiles } from '$lib/bunkers-store';
+	import { updateBunker } from '$lib/actions';
 
 	let bunkerName = '';
+	let bunkerKinds = '';
+	let bunkerExpiration: undefined | Date;
+
+	let kindsInvalid = false;
 	let bunkerActivating = false;
 	let activationProgress = 0;
 
@@ -16,12 +23,45 @@
 		}
 	});
 
+	function handleKinds() {
+		kindsInvalid = bunkerKinds.split(',').some((kind) => parseInt(kind).toString() !== kind.trim());
+	}
+
 	function autofocus(node: HTMLInputElement) {
 		node.focus();
 	}
 
-	function create() {
-		// TODO
+	function add() {
+		const secretRand = new Uint8Array(10);
+		window.crypto.getRandomValues(secretRand);
+		const secret = base32.encode(secretRand);
+
+		profiles.update((list) => {
+			list.push({
+				expanded: true,
+				name: bunkerName,
+				isRenaming: false,
+				isSaving: true,
+				newName: '',
+				uri: `bunker://${$bunkerEvent!.tags.find((t) => t[0] === 'h')![1]}?relay=${coordinator}&secret=${secret}`,
+				restrictions:
+					bunkerKinds.trim() === '' || bunkerExpiration == undefined
+						? ''
+						: JSON.stringify({
+								['k']:
+									bunkerKinds.trim() === ''
+										? undefined
+										: bunkerKinds.split(',').map((v) => parseInt(v)),
+								['u']:
+									bunkerExpiration == undefined
+										? undefined
+										: Math.round(bunkerExpiration.getTime() / 1000)
+							})
+			});
+			return [...list];
+		});
+
+		updateBunker();
 	}
 </script>
 
@@ -61,20 +101,47 @@
 
 			<div class="space-y-4">
 				<h2 class="text-xl font-semibold text-black dark:text-white">Add a new bunker</h2>
-				<p class="text-neutral-600 dark:text-neutral-400">
-					To create a new bunker give it a name, you can use the app name you are planning to use
-					it, or just something memorable:
-				</p>
 
 				<!-- Bunker Name Input -->
 				<div>
+					<p class="mb-4 text-neutral-600 dark:text-neutral-400">
+						To create a new bunker give it a name, you can use the app name you are planning to use
+						it, or just something memorable:
+					</p>
 					<input
 						bind:value={bunkerName}
 						type="text"
-						placeholder="Bunker name..."
+						placeholder="Bunker name"
 						class="w-full rounded border-2 border-neutral-300 bg-white p-3 text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						disabled={bunkerActivating}
 						use:autofocus
+					/>
+				</div>
+
+				<div class="mt-4">
+					<p class="mb-4 text-neutral-600 dark:text-neutral-400">
+						Optionally choose a date for this bunker to expire:
+					</p>
+					<input
+						bind:value={bunkerExpiration}
+						type="datetime-local"
+						placeholder="Expires at"
+						class="w-full rounded border-2 border-neutral-300 bg-white p-3 text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+						disabled={bunkerActivating}
+					/>
+				</div>
+
+				<div class="mt-4">
+					<p class="mb-4 text-neutral-600 dark:text-neutral-400">
+						Optionally restrict it to only work for some kinds:
+					</p>
+					<input
+						bind:value={bunkerKinds}
+						type="text"
+						placeholder="Comma-separated list of kinds"
+						class={`w-full rounded border-2 border-neutral-300 bg-white p-3 text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400 ${kindsInvalid ? 'border-neutral-300 border-neutral-400 border-neutral-600 border-neutral-700 border-red-500 border-red-500' : ''}`}
+						disabled={bunkerActivating}
+						on:input={handleKinds}
 					/>
 				</div>
 
@@ -96,16 +163,16 @@
 			</div>
 			<div class="mt-16 flex justify-center sm:justify-end">
 				<button
-					on:click={create}
-					disabled={bunkerActivating || !bunkerName.trim()}
+					on:click={add}
+					disabled={bunkerActivating || !bunkerName.trim() || kindsInvalid}
 					class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
-						bunkerActivating || !bunkerName.trim()
+						bunkerActivating || !bunkerName.trim() || kindsInvalid
 							? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
 							: 'bg-accent text-white hover:bg-accent/90'
 					}`}
 				>
 					<span>
-						{bunkerActivating ? 'Creating bunker...' : 'Create bunker'}
+						{bunkerActivating ? 'Adding...' : 'Add bunker'}
 					</span>
 					{#if !bunkerActivating}
 						<div class="ml-4 mr-2">

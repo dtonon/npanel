@@ -3,6 +3,9 @@ import { fetchRelayInformation, type RelayInformation } from '@nostr/tools/nip11
 import { pool } from '@nostr/gadgets/global';
 import { loadNostrUser, type ProfileMetadata } from '@nostr/gadgets/metadata';
 import { loadRelayList, type RelayItem } from '@nostr/gadgets/lists';
+import { bunkerEvent, coordinator, profiles } from './bunkers-store';
+import { get } from 'svelte/store';
+import { sk } from './store';
 
 export const indexRelays = [
 	'wss://purplepag.es',
@@ -11,6 +14,30 @@ export const indexRelays = [
 	'wss://relay.nos.social',
 	'wss://relay.damus.io'
 ];
+
+export async function updateBunker() {
+	const curr = get(bunkerEvent);
+	const newEvt = finalizeEvent({
+		...curr!,
+
+		created_at: Math.round(Date.now() / 1000),
+		tags: [
+			// copy all tags that aren't profiles
+			...curr!.tags.filter((t) => t[0] !== 'profile'),
+
+			// then get all our profiles known locally
+			...get(profiles).map((prf) => [
+				'profile',
+				prf.name,
+				new URL(prf.uri).searchParams.get('secret') || '',
+				prf.restrictions
+			])
+		]
+	}, get(sk));
+
+	let [res] = pool.publish([get(coordinator)], newEvt);
+    await res
+}
 
 export async function publishProfile(sk: Uint8Array, metadata: ProfileMetadata) {
 	const publicKey = getPublicKey(sk);

@@ -25,14 +25,8 @@
 	<input
 		list="coordinators"
 		type="text"
-		placeholder="Coordinator URL..."
-		class="w-full rounded border-2 bg-white p-3 text-black focus:outline-none dark:bg-neutral-800 dark:text-white"
-		class:border-neutral-300={isValid}
-		class:border-red-500={!isValid}
-		class:focus:border-neutral-700={isValid}
-		class:focus:border-red-500={!isValid}
-		class:dark:border-neutral-600={isValid}
-		class:dark:focus:border-neutral-400={isValid}
+		placeholder="Coordinator URL"
+		class={`w-full rounded border-2 bg-white p-3 text-black focus:outline-none dark:bg-neutral-800 dark:text-white ${isValid ? '' : 'border-neutral-300 border-neutral-400 border-neutral-600 border-neutral-700 border-red-500 border-red-500'}`}
 		value={cleanURL($coordinator)}
 		on:change={setCoordinator}
 	/>
