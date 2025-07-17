@@ -5,11 +5,12 @@ import { pool } from '@nostr/gadgets/global';
 import { pk, sk } from './store';
 import { coordinators } from './utils';
 import { normalizeURL } from '@nostr/tools/utils';
+import type { Filter } from '@nostr/tools/filter';
 
 export type BunkerProfile = {
 	readonly uri: string;
 	name: string;
-	restrictions: string;
+	restrictions: Filter | undefined;
 	expanded: boolean;
 	isRenaming: boolean;
 	newName: string;
@@ -62,7 +63,7 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 							if (tag[0] === 'profile') {
 								const name = tag[1];
 								const secret = tag[2];
-								const restrictions = tag[3];
+								const restrictions = tag[3] === '' ? undefined : JSON.parse(tag[3]);
 								const uri = `bunker://${h}?relay=${encodeURIComponent(coord)}&secret=${secret}`;
 
 								items.push({
@@ -84,6 +85,8 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 
 						return items;
 					});
+
+					bunkerEvent.set(evt);
 				}
 			}
 		);

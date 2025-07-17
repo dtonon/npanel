@@ -6,6 +6,7 @@
 	import { encrypt } from '@nostr/tools/nip49';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
+	import { autofocus } from '$lib/utils';
 
 	let backupInitialized = false;
 	let backupPrivKey = '';
@@ -57,10 +58,6 @@
 	function resetBackup() {
 		backupInitialized = false;
 		password = '';
-	}
-
-	function autofocus(node: HTMLElement) {
-		node.focus();
 	}
 </script>
 

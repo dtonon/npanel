@@ -7,7 +7,7 @@
 	import SaveButton from '$lib/SaveButton.svelte';
 	import { fade } from 'svelte/transition';
 	import { bunkerEvent, profiles, coordinator } from '$lib/bunkers-store';
-	import { cleanURL } from '$lib/utils';
+	import { autofocus, cleanURL } from '$lib/utils';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
 	import { updateBunker } from '$lib/actions';
 
@@ -70,6 +70,7 @@
 			list[index].name = list[index].newName;
 			list[index].newName = '';
 			list[index].isSaving = true;
+			list[index].isRenaming = false;
 			return [...list];
 		});
 
@@ -152,6 +153,20 @@
 			<div class="flex justify-center p-8">
 				<div class="text-neutral-500">Loading bunkers...</div>
 			</div>
+			<div class="mt-2">
+				{#if !advanced}
+					Not using <span class="text-sm italic">{cleanURL($coordinator)}</span>?
+					<button
+						class="text-accent hover:underline"
+						on:click={() => {
+							advanced = true;
+						}}>specify your coordinator</button
+					>.
+				{:else}
+					Specify your coordinator:
+					<CoordinatorInput />
+				{/if}
+			</div>
 		{:else}
 			<!-- Main Bunkers View -->
 			<div class="space-y-6">
@@ -213,7 +228,7 @@
 											on:keydown={(e) => handleKeyPress(e, index)}
 											on:click|stopPropagation
 											class="w-full border-none bg-white text-xl text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
-											autofocus
+											use:autofocus
 										/>
 									</div>
 									<div class="flex items-center space-x-2">
@@ -265,6 +280,20 @@
 										<div class="break-all text-sm text-neutral-600 dark:text-neutral-400">
 											{bunker.uri}
 										</div>
+
+										{#if bunker.restrictions?.kinds}
+											<div class="break-all text-sm text-neutral-600 dark:text-neutral-400">
+												restricted to kinds:
+												{bunker.restrictions.kinds}
+											</div>
+										{/if}
+
+										{#if bunker.restrictions?.until}
+											<div class="break-all text-sm text-neutral-600 dark:text-neutral-400">
+												expires at:
+												{new Date(bunker.restrictions.until * 1000).toLocaleString()}
+											</div>
+										{/if}
 
 										<div class="flex items-center justify-between pt-2">
 											<div class="flex items-center space-x-4">

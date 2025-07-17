@@ -7,6 +7,7 @@
 	import { fetchRelayList, publishRelayList, type RelayInfo } from '$lib/actions';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
+	import { autofocus } from '$lib/utils';
 
 	const relays = writable<import('$lib/actions').RelayInfo[]>([]);
 
@@ -54,7 +55,7 @@
 		}
 
 		// Check if relay already exists
-		if ($relays.some((relay) => relay.url === url)) {
+		if ($relays.some((relay) => relay.spec.url === url)) {
 			return 'Relay already exists';
 		}
 
@@ -162,9 +163,11 @@
 
 		try {
 			const newRelay: RelayInfo = {
-				url,
-				read: true,
-				write: true,
+				spec: {
+					url,
+					read: true,
+					write: true
+				},
 				expanded: false
 			};
 
@@ -177,14 +180,10 @@
 			addError = 'Failed to add relay. Please try again.';
 
 			// Remove the relay from store if publishing failed
-			relays.update((list) => list.filter((r) => r.url !== url));
+			relays.update((list) => list.filter((r) => r.spec.url !== url));
 		} finally {
 			isAdding = false;
 		}
-	}
-
-	function autofocus(node: HTMLElement) {
-		node.focus();
 	}
 </script>
 

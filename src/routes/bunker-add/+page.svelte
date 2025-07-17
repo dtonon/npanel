@@ -7,10 +7,11 @@
 	import Menu from '$lib/Menu.svelte';
 	import { bunkerEvent, coordinator, profiles } from '$lib/bunkers-store';
 	import { updateBunker } from '$lib/actions';
+	import { autofocus } from '$lib/utils';
 
 	let bunkerName = '';
 	let bunkerKinds = '';
-	let bunkerExpiration: undefined | Date;
+	let bunkerExpiration = '';
 
 	let kindsInvalid = false;
 	let bunkerActivating = false;
@@ -27,10 +28,6 @@
 		kindsInvalid = bunkerKinds.split(',').some((kind) => parseInt(kind).toString() !== kind.trim());
 	}
 
-	function autofocus(node: HTMLInputElement) {
-		node.focus();
-	}
-
 	function add() {
 		const secretRand = new Uint8Array(10);
 		window.crypto.getRandomValues(secretRand);
@@ -43,25 +40,27 @@
 				isRenaming: false,
 				isSaving: true,
 				newName: '',
-				uri: `bunker://${$bunkerEvent!.tags.find((t) => t[0] === 'h')![1]}?relay=${coordinator}&secret=${secret}`,
+				uri: `bunker://${$bunkerEvent!.tags.find((t) => t[0] === 'h')![1]}?relay=${encodeURIComponent($coordinator)}&secret=${secret}`,
 				restrictions:
-					bunkerKinds.trim() === '' || bunkerExpiration == undefined
-						? ''
-						: JSON.stringify({
-								['k']:
+					bunkerKinds.trim() === '' && bunkerExpiration.trim() === ''
+						? undefined
+						: {
+								kinds:
 									bunkerKinds.trim() === ''
 										? undefined
 										: bunkerKinds.split(',').map((v) => parseInt(v)),
-								['u']:
-									bunkerExpiration == undefined
+								until:
+									bunkerExpiration.trim() === ''
 										? undefined
-										: Math.round(bunkerExpiration.getTime() / 1000)
-							})
+										: Math.round(Date.parse(bunkerExpiration) / 1000)
+							}
 			});
 			return [...list];
 		});
 
 		updateBunker();
+
+		goto('/bunkers');
 	}
 </script>
 
@@ -125,6 +124,7 @@
 					<input
 						bind:value={bunkerExpiration}
 						type="datetime-local"
+						min={new Date().toISOString()}
 						placeholder="Expires at"
 						class="w-full rounded border-2 border-neutral-300 bg-white p-3 text-black focus:border-neutral-700 focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						disabled={bunkerActivating}

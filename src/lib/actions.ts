@@ -17,26 +17,33 @@ export const indexRelays = [
 
 export async function updateBunker() {
 	const curr = get(bunkerEvent);
-	const newEvt = finalizeEvent({
-		...curr!,
 
-		created_at: Math.round(Date.now() / 1000),
-		tags: [
-			// copy all tags that aren't profiles
-			...curr!.tags.filter((t) => t[0] !== 'profile'),
+	// set this now so the UI shows as loading
+	bunkerEvent.set(null);
 
-			// then get all our profiles known locally
-			...get(profiles).map((prf) => [
-				'profile',
-				prf.name,
-				new URL(prf.uri).searchParams.get('secret') || '',
-				prf.restrictions
-			])
-		]
-	}, get(sk));
+	const newEvt = finalizeEvent(
+		{
+			...curr!,
 
-	let [res] = pool.publish([get(coordinator)], newEvt);
-    await res
+			created_at: Math.round(Date.now() / 1000),
+			tags: [
+				// copy all tags that aren't profiles
+				...curr!.tags.filter((t) => t[0] !== 'profile'),
+
+				// then get all our profiles known locally
+				...get(profiles).map((prf) => [
+					'profile',
+					prf.name,
+					new URL(prf.uri).searchParams.get('secret') || '',
+					prf.restrictions ? JSON.stringify(prf.restrictions) : ''
+				])
+			]
+		},
+		get(sk)
+	);
+
+	const [res] = pool.publish([get(coordinator)], newEvt);
+	await res;
 }
 
 export async function publishProfile(sk: Uint8Array, metadata: ProfileMetadata) {
@@ -98,7 +105,7 @@ export async function clearSession() {
 export type RelayInfo = {
 	spec: RelayItem;
 	expanded?: boolean;
-	nip11: RelayInformation;
+	nip11?: RelayInformation;
 };
 
 export async function getPublishRelays(publicKey: string): Promise<string[]> {

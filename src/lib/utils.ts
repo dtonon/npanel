@@ -39,3 +39,7 @@ export async function minePow(
 		}
 	});
 }
+
+export function autofocus(node: HTMLElement) {
+	node.focus();
+}
