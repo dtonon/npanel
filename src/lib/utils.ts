@@ -1,6 +1,14 @@
 import type { NostrEvent, UnsignedEvent } from '@nostr/tools';
 import HashWorker from './worker?worker';
 
+export const indexRelays = [
+	'wss://purplepag.es',
+	'wss://user.kindpag.es',
+	'wss://relay.nostr.band',
+	'wss://relay.nos.social',
+	'wss://relay.damus.io'
+];
+
 export const coordinators = ['promenade.fiatjaf.com', 'frostbunker.njump.me'];
 
 export const signers = [

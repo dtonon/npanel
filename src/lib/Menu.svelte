@@ -3,18 +3,19 @@
 	import { fade, fly } from 'svelte/transition';
 	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 	import { picture } from '$lib/store';
-	import { clearSession } from '$lib/actions';
 	import { pool } from '@nostr/gadgets/global';
-	import { bunkerEvent, coordinator, profiles } from './bunkers-store';
+	import { bunkerEvent, profiles, relays } from './metadata-store';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
 
 	$: effectiveTheme = getEffectiveTheme($theme);
 
-	const menuItems = [
+	$: menuItems = [
 		{ id: 'profile', label: 'Profile', path: '/profile' },
-		{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' },
+		...($relays?.filter((r) => r.spec.read).length
+			? [{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' }]
+			: []),
 		{ id: 'relays', label: 'Relays', path: '/relays' },
 		{ id: 'backup', label: 'Backup key', path: '/backup' }
 	];
@@ -32,7 +33,7 @@
 		}
 		bunkerEvent.set(null);
 		profiles.set([]);
-		clearSession();
+		sessionStorage.clear();
 		goto('/');
 	}
 

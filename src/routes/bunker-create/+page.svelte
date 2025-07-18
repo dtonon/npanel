@@ -6,7 +6,7 @@
 	import { pk, sk } from '$lib/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
-	import { bunkerEvent, coordinator, profiles } from '$lib/bunkers-store';
+	import { bunkerEvent, coordinator, profiles, relays } from '$lib/metadata-store';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
 	import { pool } from '@nostr/gadgets/global';
 	import { loadRelayList } from '@nostr/gadgets/lists';
@@ -84,6 +84,11 @@
 			goto('/');
 			return;
 		}
+
+		if (!$relays?.filter((r) => r.spec.read).length) {
+			goto('/relays');
+			return;
+		}
 	});
 
 	async function activate(event: Event) {
@@ -92,15 +97,14 @@
 
 		let intv = setInterval(() => {
 			if (activationProgress < 98) activationProgress++;
-		}, 100);
+		}, 1000);
 
 		const potentialSigners = advanced ? Array.from(totalSigners) : signers.map((s) => s.pubkey);
-		const [rl, ...signerInboxes] = await Promise.all([
-			loadRelayList($pk),
-			...potentialSigners.map((pk) =>
+		const signerInboxes = await Promise.all(
+			potentialSigners.map((pk) =>
 				loadRelayList(pk).then((rl) => rl.items.filter((r) => r.read).map((r) => r.url))
 			)
-		]);
+		);
 
 		try {
 			let account = await shardGetBunker(
@@ -113,10 +117,13 @@
 				$coordinator,
 				20,
 				Object.fromEntries(signerInboxes.map((inb, i) => [potentialSigners[i], inb])),
-				rl.items.filter((r) => r.read).map((r) => r.url),
+				$relays!.filter((r) => r.spec.read).map((r) => r.spec.url),
 				minePow,
 				(p: number) => {
 					activationProgress = p;
+				},
+				(signer: string, err: string | null) => {
+					console.log('signer', signer, 'err', err);
 				}
 			);
 
@@ -281,7 +288,7 @@
 							></div>
 						</div>
 						<div class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-							Creating bunker... {activationProgress}%
+							Creating bunker... {activationProgress.toFixed(0)}%
 						</div>
 					</div>
 				{/if}

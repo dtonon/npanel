@@ -6,7 +6,7 @@
 	import Menu from '$lib/Menu.svelte';
 	import SaveButton from '$lib/SaveButton.svelte';
 	import { fade } from 'svelte/transition';
-	import { bunkerEvent, profiles, coordinator } from '$lib/bunkers-store';
+	import { bunkerEvent, profiles, coordinator } from '$lib/metadata-store';
 	import { autofocus, cleanURL } from '$lib/utils';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
 	import { updateBunker } from '$lib/actions';

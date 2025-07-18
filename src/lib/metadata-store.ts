@@ -6,6 +6,10 @@ import { pk, sk } from './store';
 import { coordinators } from './utils';
 import { normalizeURL } from '@nostr/tools/utils';
 import type { Filter } from '@nostr/tools/filter';
+import { loadRelayList, type RelayItem } from '@nostr/gadgets/lists';
+import { loadNostrUser, type NostrUser } from '@nostr/gadgets/metadata';
+import { fetchRelayInformation, type RelayInformation } from '@nostr/tools/nip11';
+import { indexRelays } from './utils';
 
 export type BunkerProfile = {
 	readonly uri: string;
@@ -17,13 +21,52 @@ export type BunkerProfile = {
 	isSaving: boolean;
 };
 
+export type RelayInfo = {
+	spec: RelayItem;
+	expanded?: boolean;
+	nip11?: RelayInformation;
+};
+
+export const relays = writable<RelayInfo[] | null>(null);
+export const user = writable<NostrUser | null>(null);
 export const coordinator = writable<string>(normalizeURL(coordinators[0]));
 export const bunkerEvent = writable<null | NostrEvent>(null); // when this is null that means we're "loading"
 export const profiles = writable<BunkerProfile[]>([]);
 
+pk.subscribe(async (pk) => {
+	const rl = await loadRelayList(pk, indexRelays, true);
+
+	if (!rl.event || rl.event.tags.length === 0) {
+		// remove the hardcoded default relays if that's the case
+		rl.items = [];
+	}
+
+	const items: RelayInfo[] = [];
+	const promises: Promise<void>[] = [];
+	for (let i = 0; i < rl.items.length; i++) {
+		const p = fetchRelayInformation(rl.items[i].url).then((nip11) => {
+			items[i] = { spec: rl.items[i], nip11 };
+		});
+		promises.push(p);
+	}
+
+	await Promise.allSettled(promises);
+	relays.set(items);
+});
+
+pk.subscribe(async (pk) => {
+	user.set(
+		await loadNostrUser({
+			pubkey: pk,
+			relays: indexRelays,
+			forceUpdate: true
+		})
+	);
+});
+
 let subc: SubCloser;
-derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
-	([coord, pk, sk]) => {
+derived([coordinator, pk, sk], ([coord, pk, sk]) => ({ coord, pk, sk })).subscribe(
+	({ coord, pk, sk }) => {
 		if (subc) {
 			subc.close();
 		}
@@ -41,11 +84,14 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 				limit: 1
 			},
 			{
-				doauth(event) {
+				async doauth(event) {
 					return finalizeEvent(event, sk);
 				},
 				oneose() {
-					bunkerEvent.set({} as NostrEvent);
+					bunkerEvent.update((curr) => {
+						if (!curr) return {} as NostrEvent;
+						return curr;
+					});
 					profiles.update((current) => {
 						if (current === null) return [];
 						return current;

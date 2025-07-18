@@ -1,34 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getPublicKey } from '@nostr/tools/pure';
 	import { sk } from '$lib/store';
-	import { writable } from 'svelte/store';
-	import { fetchRelayList, publishRelayList } from '$lib/actions';
+	import { publishRelayList } from '$lib/actions';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
-
-	const relays = writable<import('$lib/actions').RelayInfo[]>([]);
+	import { relays } from '$lib/metadata-store';
 
 	const maxRelays = 5;
 
-	let isLoading = true;
 	let saveTimeout: number;
-
 	onMount(async () => {
 		if ($sk.length === 0) {
 			goto('/');
 			return;
-		}
-
-		try {
-			const publicKey = getPublicKey($sk);
-			const relayList = await fetchRelayList(publicKey);
-			relays.set(relayList);
-		} catch (error) {
-			console.error('Failed to load relay list:', error);
-		} finally {
-			isLoading = false;
 		}
 	});
 
@@ -73,7 +58,7 @@
 
 	function debouncedSave() {
 		clearTimeout(saveTimeout);
-		saveTimeout = setTimeout(() => publishRelayList($sk, $relays), 1000);
+		saveTimeout = setTimeout(() => publishRelayList(), 1000);
 	}
 </script>
 
@@ -103,7 +88,7 @@
 	</div>
 
 	<div slot="interactive">
-		{#if isLoading}
+		{#if $relays === null}
 			<div class="flex justify-center p-8">
 				<div class="text-neutral-500">Loading relays...</div>
 			</div>
@@ -115,8 +100,6 @@
 					couple of different "read" and "write" relays, it's not necessary to have a lot of relays.
 					<button class="text-accent hover:underline">Learn more</button> about relays.
 				</div>
-
-				{JSON.stringify($relays)}
 
 				<div class="space-y-3">
 					{#each $relays as relay, index}
@@ -313,8 +296,9 @@
 						Good, you have reached the maximum number of relays you can add!
 						{#if $relays.length > maxRelays}
 							<span class="text-accent"
-								>To optimize your Nostr experience we suggest to remove {$relays.length - maxRelays}
-								{$relays.length - maxRelays > 1 ? 'relays' : 'relay'} and keep them to {maxRelays}.</span
+								>To optimize your Nostr experience we suggest removing {$relays.length - maxRelays}
+								{$relays.length - maxRelays > 1 ? 'relays' : 'relay'} and keeping them to a maximum of
+								{maxRelays}.</span
 							>
 						{/if}
 					</div>

@@ -426,7 +426,7 @@
 			uploading = false;
 		}
 
-		await publishProfile($sk, {
+		await publishProfile({
 			name: name,
 			about: about,
 			picture: $picture,

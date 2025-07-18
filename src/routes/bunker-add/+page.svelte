@@ -5,7 +5,7 @@
 	import { sk } from '$lib/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
-	import { bunkerEvent, coordinator, profiles } from '$lib/bunkers-store';
+	import { bunkerEvent, coordinator, profiles } from '$lib/metadata-store';
 	import { updateBunker } from '$lib/actions';
 	import { autofocus } from '$lib/utils';
 
@@ -43,7 +43,7 @@
 				uri: `bunker://${$bunkerEvent!.tags.find((t) => t[0] === 'h')![1]}?relay=${encodeURIComponent($coordinator)}&secret=${secret}`,
 				restrictions:
 					bunkerKinds.trim() === '' && bunkerExpiration.trim() === ''
-						? undefined
+						? null
 						: {
 								kinds:
 									bunkerKinds.trim() === ''

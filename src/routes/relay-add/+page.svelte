@@ -1,15 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getPublicKey } from '@nostr/tools/pure';
 	import { sk } from '$lib/store';
-	import { writable } from 'svelte/store';
-	import { fetchRelayList, publishRelayList, type RelayInfo } from '$lib/actions';
+	import { publishRelayList } from '$lib/actions';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
 	import { autofocus } from '$lib/utils';
-
-	const relays = writable<import('$lib/actions').RelayInfo[]>([]);
+	import { relays, type RelayInfo } from '$lib/metadata-store';
 
 	let newRelayUrl = '';
 	let addError = '';
@@ -21,14 +18,6 @@
 		if ($sk.length === 0) {
 			goto('/');
 			return;
-		}
-
-		try {
-			const publicKey = getPublicKey($sk);
-			const relayList = await fetchRelayList(publicKey);
-			relays.set(relayList);
-		} catch (error) {
-			console.error('Failed to load relay list:', error);
 		}
 	});
 
@@ -173,7 +162,7 @@
 			};
 
 			relays.update((list) => [...list, newRelay]);
-			await publishRelayList($sk, $relays);
+			await publishRelayList();
 
 			goto('/relays');
 		} catch (error) {

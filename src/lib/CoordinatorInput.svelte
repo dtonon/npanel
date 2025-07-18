@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as nip11 from '@nostr/tools/nip11';
-	import { coordinator } from './bunkers-store';
 	import { normalizeURL } from '@nostr/tools/utils';
+	import { coordinator } from './metadata-store';
 	import { cleanURL, coordinators } from './utils';
 
 	let isValid = true;
