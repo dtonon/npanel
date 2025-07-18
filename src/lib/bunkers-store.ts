@@ -10,7 +10,7 @@ import type { Filter } from '@nostr/tools/filter';
 export type BunkerProfile = {
 	readonly uri: string;
 	name: string;
-	restrictions: Filter | undefined;
+	restrictions: Filter | null;
 	expanded: boolean;
 	isRenaming: boolean;
 	newName: string;
@@ -18,7 +18,7 @@ export type BunkerProfile = {
 };
 
 export const coordinator = writable<string>(normalizeURL(coordinators[0]));
-export const bunkerEvent = writable<null | NostrEvent>(null);
+export const bunkerEvent = writable<null | NostrEvent>(null); // when this is null that means we're "loading"
 export const profiles = writable<BunkerProfile[]>([]);
 
 let subc: SubCloser;
@@ -45,6 +45,7 @@ derived([coordinator, pk, sk], ([coord, pk, sk]) => [coord, pk, sk]).subscribe(
 					return finalizeEvent(event, sk);
 				},
 				oneose() {
+					bunkerEvent.set({} as NostrEvent);
 					profiles.update((current) => {
 						if (current === null) return [];
 						return current;

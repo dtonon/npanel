@@ -116,6 +116,8 @@
 					<button class="text-accent hover:underline">Learn more</button> about relays.
 				</div>
 
+				{JSON.stringify($relays)}
+
 				<div class="space-y-3">
 					{#each $relays as relay, index}
 						<div

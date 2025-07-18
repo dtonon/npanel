@@ -278,7 +278,7 @@
 								>
 									<div class="space-y-3">
 										<div class="break-all text-sm text-neutral-600 dark:text-neutral-400">
-											{bunker.uri}
+											<pre class="whitespace-pre-wrap break-all"><code>{bunker.uri}</code></pre>
 										</div>
 
 										{#if bunker.restrictions?.kinds}

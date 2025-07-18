@@ -5,6 +5,7 @@
 	import { picture } from '$lib/store';
 	import { clearSession } from '$lib/actions';
 	import { pool } from '@nostr/gadgets/global';
+	import { bunkerEvent, coordinator, profiles } from './bunkers-store';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
@@ -29,6 +30,8 @@
 		for (let [url] of pool.listConnectionStatus()) {
 			pool.close([url]);
 		}
+		bunkerEvent.set(null);
+		profiles.set([]);
 		clearSession();
 		goto('/');
 	}

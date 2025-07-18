@@ -1,51 +1,37 @@
 <script lang="ts">
 	import { onMount, afterUpdate } from 'svelte';
+	import { base32 } from '@scure/base';
 	import { shardGetBunker } from '@fiatjaf/promenade-trusted-dealer';
 	import { goto } from '$app/navigation';
 	import { pk, sk } from '$lib/store';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
-	import { bunkerEvent, coordinator } from '$lib/bunkers-store';
+	import { bunkerEvent, coordinator, profiles } from '$lib/bunkers-store';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
 	import { pool } from '@nostr/gadgets/global';
 	import { loadRelayList } from '@nostr/gadgets/lists';
-	import { cleanURL, minePow } from '$lib/utils';
+	import { cleanURL, minePow, signers } from '$lib/utils';
+	import { updateBunker } from '$lib/actions';
 
-	let bunkerName = '';
 	let bunkerActivating = false;
 	let activationProgress = 0;
 	let advanced = false;
-	let selectedSigners = new Set(['fiatjafhome1', 'fiatjafhome1', 'fiatjafhome1']);
+	let totalSigners = new Set(signers.map((s) => s.pubkey));
 	const defaultThreshold = 2;
 	const defaultSelected = 3;
 	const minThreshold = 2;
-	let threshold = 3;
-	let total = 4;
-
-	const signers = [
-		{
-			name: 'fiatjafhome1',
-			pubkey: '77ff8d1f2b88ea5a468036d393beef09dc01b4d770c7d4f0c4198f404aa1ffe2'
-		},
-		{
-			name: 'fiatjafhome2',
-			pubkey: '19c048b360209beb47344b45bf581f57c30e603946febf10e03534d81ab8a507'
-		},
-		{
-			name: 'fiatjafhome3',
-			pubkey: '97a7491f73155d04f209374b144646e3cb89db25f03146b58c572cd1e2d93567'
-		}
-	];
+	let threshold = defaultThreshold;
+	let total = defaultSelected;
 
 	function toggleSigner(pubkey: string) {
-		if (selectedSigners.has(pubkey)) {
+		if (totalSigners.has(pubkey)) {
 			// disable signer
-			if (selectedSigners.size > threshold) {
-				selectedSigners.delete(pubkey);
-				selectedSigners = selectedSigners;
-				// if we remove a signer and total is now greater than selected signers, adjust it
-				if (total > selectedSigners.size) {
-					total = selectedSigners.size;
+			if (totalSigners.size > threshold) {
+				totalSigners.delete(pubkey);
+				totalSigners = totalSigners;
+				// if we remove a signer and total is now greater than total signers, adjust it
+				if (total > totalSigners.size) {
+					total = totalSigners.size;
 					// now if threshold is greater than total adjust it too
 					if (threshold > total) {
 						threshold = total;
@@ -54,13 +40,13 @@
 			}
 		} else {
 			// enable signer
-			selectedSigners.add(pubkey);
-			selectedSigners = selectedSigners;
+			totalSigners.add(pubkey);
+			totalSigners = totalSigners;
 		}
 	}
 
 	function incrementThreshold() {
-		if (threshold >= selectedSigners.size) {
+		if (threshold >= totalSigners.size) {
 			threshold = minThreshold;
 		} else {
 			threshold++;
@@ -68,7 +54,7 @@
 	}
 
 	function incrementTotal() {
-		if (total >= selectedSigners.size) {
+		if (total >= totalSigners.size) {
 			total = threshold;
 		} else {
 			total++;
@@ -108,7 +94,7 @@
 			if (activationProgress < 98) activationProgress++;
 		}, 100);
 
-		const potentialSigners = advanced ? Array.from(selectedSigners) : signers.map((s) => s.pubkey);
+		const potentialSigners = advanced ? Array.from(totalSigners) : signers.map((s) => s.pubkey);
 		const [rl, ...signerInboxes] = await Promise.all([
 			loadRelayList($pk),
 			...potentialSigners.map((pk) =>
@@ -137,7 +123,25 @@
 			console.log(`Created root bunker`);
 			bunkerEvent.set(account);
 
-			bunkerActivating = false;
+			// automatically create the first profile, with full access
+			const secretRand = new Uint8Array(10);
+			window.crypto.getRandomValues(secretRand);
+			const secret = base32.encode(secretRand);
+			profiles.set([
+				{
+					name: 'MASTER',
+					uri: `bunker://${account.pubkey}?relay=${$coordinator}&secret=${secret}`,
+					restrictions: null,
+					newName: '',
+					expanded: true,
+					isRenaming: false,
+					isSaving: true
+				}
+			]);
+
+			updateBunker().then(() => {
+				bunkerActivating = false;
+			});
 
 			goto('/bunkers');
 		} catch (err) {
@@ -192,8 +196,8 @@
 							This bunker will be created at <span class="text-sm italic"
 								>{cleanURL($coordinator)}</span
 							>
-							with {advanced ? selectedSigners.size : defaultSelected} signers, requiring
-							{defaultThreshold} signatures to sign events.
+							with {defaultSelected} signers, with
+							{defaultThreshold} being required to be online.
 						</div>
 						<div class="mt-4">
 							You can customize these settings using the advanced options below.
@@ -208,10 +212,9 @@
 									<label class="flex items-center space-x-2">
 										<input
 											type="checkbox"
-											checked={selectedSigners.has(signer.pubkey)}
+											checked={totalSigners.has(signer.pubkey)}
 											on:change={() => toggleSigner(signer.pubkey)}
-											disabled={selectedSigners.size <= threshold &&
-												selectedSigners.has(signer.pubkey)}
+											disabled={totalSigners.size <= threshold && totalSigners.has(signer.pubkey)}
 											class="h-4 w-4 text-accent"
 										/>
 										<span class="text-neutral-700 dark:text-neutral-300">
@@ -221,13 +224,13 @@
 								{/each}
 							</div>
 							<div class="mt-4">
-								{#if selectedSigners.size < minThreshold}
-									You need to select at least {minThreshold - selectedSigners.size} more {minThreshold -
-										selectedSigners.size ===
+								{#if totalSigners.size < minThreshold}
+									You need to select at least {minThreshold - totalSigners.size} more {minThreshold -
+										totalSigners.size ===
 									1
 										? 'signer'
 										: 'signers'} to continue.
-								{:else if selectedSigners.size == 2 && minThreshold == 2}
+								{:else if totalSigners.size == 2 && minThreshold == 2}
 									With 2 signers selected, both signatures will be required.
 								{:else}
 									<div bind:this={advancedButtonContainer}>
@@ -241,7 +244,7 @@
 											class="total-button cursor-pointer text-accent underline hover:no-underline"
 											>{total}</button
 										>
-										selected signers to sign events.
+										total signers to be online.
 									</div>
 								{/if}
 							</div>
@@ -286,9 +289,9 @@
 			<div class="mt-16 flex justify-center sm:justify-end">
 				<button
 					on:click={activate}
-					disabled={bunkerActivating || !bunkerName.trim()}
+					disabled={bunkerActivating}
 					class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
-						bunkerActivating || !bunkerName.trim()
+						bunkerActivating
 							? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
 							: 'bg-accent text-white hover:bg-accent/90'
 					}`}

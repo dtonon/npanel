@@ -56,6 +56,7 @@
 
 		// Check if relay already exists
 		if ($relays.some((relay) => relay.spec.url === url)) {
+			console.log($relays);
 			return 'Relay already exists';
 		}
 

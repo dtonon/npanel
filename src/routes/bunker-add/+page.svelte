@@ -104,8 +104,8 @@
 				<!-- Bunker Name Input -->
 				<div>
 					<p class="mb-4 text-neutral-600 dark:text-neutral-400">
-						To create a new bunker give it a name, you can use the app name you are planning to use
-						it, or just something memorable:
+						To add a new bunker give it a name, you can use the app name you are planning to use it,
+						or just something memorable:
 					</p>
 					<input
 						bind:value={bunkerName}
