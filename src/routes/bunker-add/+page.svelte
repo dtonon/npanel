@@ -95,17 +95,17 @@
 				on:click={() => goto('/bunkers')}
 				class="flex items-center text-accent transition-colors hover:text-accent/80"
 			>
-				← Go back to bunkers' list
+				← Go back to the list of bunker accesses
 			</button>
 
 			<div class="space-y-4">
-				<h2 class="text-xl font-semibold text-black dark:text-white">Add a new bunker</h2>
+				<h2 class="text-xl font-semibold text-black dark:text-white">Add a new bunker access</h2>
 
 				<!-- Bunker Name Input -->
 				<div>
 					<p class="mb-4 text-neutral-600 dark:text-neutral-400">
-						To add a new bunker give it a name, you can use the app name you are planning to use it,
-						or just something memorable:
+						To add a new bunker access give it a name, you can use the app name you are planning to
+						use it, or just something memorable:
 					</p>
 					<input
 						bind:value={bunkerName}

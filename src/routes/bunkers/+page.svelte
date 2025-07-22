@@ -23,6 +23,11 @@
 			goto('/');
 			return;
 		}
+
+		if ($profiles.length === 0) {
+			goto('/bunker-create');
+			return;
+		}
 	});
 
 	function addNewBunker() {
@@ -170,13 +175,13 @@
 		{:else}
 			<!-- Main Bunkers View -->
 			<div class="space-y-6">
-				<div class="leading-6 text-neutral-600 dark:text-neutral-400">
-					In this area you can manage your bunkers. Bunkers are special signing services that can
-					sign events for you remotely.
+				<div class=" text-neutral-600 dark:text-neutral-400">
+					In this area you can manage your bunker and its accesses. Bunkers are special signing
+					services that can sign events for you remotely. <button
+						class="text-accent hover:underline">Learn more</button
+					> about bunkers.
 				</div>
-				<div class="mt-2">
-					<button class="text-accent hover:underline">Learn more</button> about bunkers.
-				</div>
+
 				{#if $bunkerEvent === null}
 					<div class="mt-2">
 						{#if !advanced}
@@ -373,7 +378,7 @@
 								: 'bg-accent text-white hover:bg-accent/90'
 						}`}
 					>
-						<span>Add a bunker</span>
+						<span>Add another access</span>
 						<div class="ml-4 mr-2">
 							<svg
 								class="h-5 w-5"

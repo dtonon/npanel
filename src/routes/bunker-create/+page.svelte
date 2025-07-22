@@ -8,6 +8,7 @@
 	import Menu from '$lib/Menu.svelte';
 	import { bunkerEvent, coordinator, profiles, relays } from '$lib/metadata-store';
 	import CoordinatorInput from '$lib/CoordinatorInput.svelte';
+	import CheckboxWithLabel from '$lib/CheckboxWithLabel.svelte';
 	import { pool } from '@nostr/gadgets/global';
 	import { loadRelayList } from '@nostr/gadgets/lists';
 	import { cleanURL, minePow, signers } from '$lib/utils';
@@ -136,7 +137,7 @@
 			const secret = base32.encode(secretRand);
 			profiles.set([
 				{
-					name: 'MASTER',
+					name: 'Main bunker access',
 					uri: `bunker://${account.pubkey}?relay=${$coordinator}&secret=${secret}`,
 					restrictions: null,
 					newName: '',
@@ -187,47 +188,53 @@
 
 	<div slot="interactive" class="text-neutral-700 dark:text-neutral-300">
 		<div class="space-y-6">
-			<button
-				on:click={() => goto('/bunkers')}
-				class="flex items-center text-accent transition-colors hover:text-accent/80"
-			>
-				← Go back to bunkers' list
-			</button>
+			{#if $profiles.length > 0}
+				<button
+					on:click={() => goto('/bunkers')}
+					class="flex items-center text-accent transition-colors hover:text-accent/80"
+				>
+					← Go back to bunkers' list
+				</button>
+			{/if}
 
 			<div class="space-y-4">
-				<h2 class="text-xl font-semibold text-black dark:text-white">Create a new bunker</h2>
+				<h2 class="text-xl font-semibold text-black dark:text-white">
+					Set up your bunker infrastructure
+				</h2>
 
 				<div class="mt-6">
 					{#if !advanced}
 						<div class="mt-6">
-							This bunker will be created at <span class="text-sm italic"
-								>{cleanURL($coordinator)}</span
-							>
-							with {defaultSelected} signers, with
-							{defaultThreshold} being required to be online.
+							First of all we need to setup the basic configuration of your new FROST
+							(multi-signature) bunker.
 						</div>
-						<div class="mt-4">
-							You can customize these settings using the advanced options below.
+						<div class="mt-6">
+							if you do not choose to customize it (see advanced settings below), this bunker will
+							be created at <span class="italic">{cleanURL($coordinator)}</span>
+							with {defaultSelected} signers, with {defaultThreshold} being required to be online.
+						</div>
+						<div class="mt-6">
+							As soon the bunker will be created, a first main bunker access will be geneated, then
+							you will able to add more bunker accesses, optionally setting also some constranins
+							(expiration and kinds permission).
 						</div>
 					{/if}
 
 					{#if advanced}
-						<div class="mt-2">Now select the signers you want to include in your bunker:</div>
+						<div class="mt-2">
+							In this advance mode you can select the signers you want to include in your bunker,
+							choose the N-of-M threshold and also the coordinator server.
+						</div>
+						<div class="mt-6">Select the signers you want to use:</div>
 						<div class="mt-4">
 							<div class="space-y-2">
 								{#each signers as signer}
-									<label class="flex items-center space-x-2">
-										<input
-											type="checkbox"
-											checked={totalSigners.has(signer.pubkey)}
-											on:change={() => toggleSigner(signer.pubkey)}
-											disabled={totalSigners.size <= threshold && totalSigners.has(signer.pubkey)}
-											class="h-4 w-4 text-accent"
-										/>
-										<span class="text-neutral-700 dark:text-neutral-300">
-											{signer.name}
-										</span>
-									</label>
+									<CheckboxWithLabel
+										checked={totalSigners.has(signer.pubkey)}
+										onClick={() => toggleSigner(signer.pubkey)}
+										disabled={totalSigners.size <= threshold && totalSigners.has(signer.pubkey)}
+										>{signer.name}</CheckboxWithLabel
+									>
 								{/each}
 							</div>
 							<div class="mt-4">
@@ -264,7 +271,7 @@
 						</div>
 
 						<div class="mt-4">
-							<p class="mb-2">Choose the coordinator server:</p>
+							<p class="mb-2">The coordinator server is:</p>
 							<CoordinatorInput />
 						</div>
 					{/if}
@@ -275,7 +282,7 @@
 							advanced = !advanced;
 						}}
 					>
-						{advanced ? 'Use default settings' : 'Advanced settings'}
+						{advanced ? 'Go back to the default settings' : 'Advanced settings'}
 					</button>
 				</div>
 
@@ -304,7 +311,7 @@
 					}`}
 				>
 					<span>
-						{bunkerActivating ? 'Creating bunker...' : 'Create bunker'}
+						{bunkerActivating ? 'Creating bunker...' : 'Set up the bunker'}
 					</span>
 					{#if !bunkerActivating}
 						<div class="ml-4 mr-2">
