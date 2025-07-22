@@ -9,6 +9,7 @@
 	import { isMobile } from '$lib/mobile';
 	import Menu from '$lib/Menu.svelte';
 	import { sk, picture } from '$lib/store';
+	import { user } from '$lib/metadata-store';
 	import { getPublicKey } from '@nostr/tools/pure';
 	import { publishProfile } from '$lib/actions';
 	import { utf8Encoder } from '@nostr/tools/utils';
@@ -16,7 +17,6 @@
 	import { bytesToHex } from '@noble/hashes/utils';
 	import { sha256 } from '@noble/hashes/sha256';
 	import { finalizeEvent, type EventTemplate } from '@nostr/tools/pure';
-	import { loadNostrUser } from '@nostr/gadgets/metadata';
 
 	let isLoading = true;
 	let name = '';
@@ -89,41 +89,37 @@
 		}
 	}
 
-	onMount(async () => {
-		if ($sk.length === 0) {
-			goto('/');
+	$: if ($user) {
+		name = $user.metadata.name || '';
+		$picture = $user.metadata.picture || '';
+		originalPicture = $user.metadata.picture || '';
+		about = $user.metadata.about || '';
+		website = $user.metadata.website || '';
+		nip05 = $user.metadata.nip05 || '';
+		lud16 = $user.metadata.lud16 || '';
+
+		// Store original values
+		originalName = name;
+		originalAbout = about;
+		originalWebsite = website;
+		originalNip05 = nip05;
+		originalLud16 = lud16;
+
+		// Validate NIP-05 if present
+		if (nip05) {
+			checkNip05Validation();
 		}
 
-		const publicKeyHex = getPublicKey($sk);
+		// Validate LUD-16 if present
+		if (lud16) {
+			checkLud16Validation();
+		}
+		isLoading = false;
+	}
 
-		const userProfile = await loadNostrUser({ pubkey: publicKeyHex, forceUpdate: true });
-		console.log('userProfile', userProfile);
-		if (userProfile) {
-			name = userProfile.metadata.name || '';
-			$picture = userProfile.metadata.picture || '';
-			originalPicture = userProfile.metadata.picture || '';
-			about = userProfile.metadata.about || '';
-			website = userProfile.metadata.website || '';
-			nip05 = userProfile.metadata.nip05 || '';
-			lud16 = userProfile.metadata.lud16 || '';
-
-			// Store original values
-			originalName = name;
-			originalAbout = about;
-			originalWebsite = website;
-			originalNip05 = nip05;
-			originalLud16 = lud16;
-
-			// Validate NIP-05 if present
-			if (nip05) {
-				checkNip05Validation();
-			}
-
-			// Validate LUD-16 if present
-			if (lud16) {
-				checkLud16Validation();
-			}
-			isLoading = false;
+	onMount(() => {
+		if ($sk.length === 0) {
+			goto('/');
 		}
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
