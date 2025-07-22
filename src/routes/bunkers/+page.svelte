@@ -28,6 +28,17 @@
 			goto('/bunker-create');
 			return;
 		}
+
+		// Ensure only the newest bunker is expanded
+		const expandedCount = $profiles.filter((bunker) => bunker.expanded).length;
+		if (expandedCount > 1) {
+			profiles.update((list) => {
+				return list.map((prf, i) => ({
+					...prf,
+					expanded: i === list.length - 1 && prf.expanded
+				}));
+			});
+		}
 	});
 
 	function addNewBunker() {
