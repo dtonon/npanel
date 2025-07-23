@@ -4,7 +4,7 @@
 		class="gradient flex-none items-center justify-end p-8 sm:flex sm:min-h-screen sm:w-[40%] sm:p-0"
 		style="background: linear-gradient(to top right, rgba(220, 220, 220, 0.5), rgba(255, 255, 255, 0.95)), url('/bg/noisy.png');"
 	>
-		<div class="animate-fade1 w-full sm:mr-10 sm:w-[45%] sm:max-w-[300px]">
+		<div class="animate-fade1 w-full sm:mr-10 sm:max-w-[260px]">
 			<slot name="intro" />
 		</div>
 	</div>
@@ -13,7 +13,7 @@
 	<div
 		class="animate-fade2 flex flex-none items-center justify-start p-8 sm:min-h-screen sm:w-[60%] sm:p-0"
 	>
-		<div class="animate-fade2 flex w-full max-w-full flex-col sm:ml-16 sm:w-[50%] sm:max-w-[600px]">
+		<div class="animate-fade2 flex w-full max-w-full flex-col sm:ml-16 sm:max-w-[440px]">
 			<slot name="interactive" />
 		</div>
 	</div>
