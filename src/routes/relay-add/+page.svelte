@@ -165,10 +165,10 @@
 				url,
 				read: true,
 				write: true,
-				expanded: false
+				expanded: true
 			};
 
-			relays.update((list) => [...list, newRelay]);
+			relays.update((list) => [newRelay, ...list]);
 			await publishRelayList($sk, $relays);
 
 			goto('/relays');
