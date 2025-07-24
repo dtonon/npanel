@@ -7,6 +7,7 @@
 	import Menu from '$lib/Menu.svelte';
 	import { autofocus } from '$lib/utils';
 	import { relays, type RelayInfo } from '$lib/metadata-store';
+	import { fetchRelayInformation } from '@nostr/tools/nip11';
 
 	let newRelayUrl = '';
 	let addError = '';
@@ -158,7 +159,8 @@
 					read: true,
 					write: true
 				},
-				expanded: true
+				expanded: true,
+				nip11: await fetchRelayInformation(url)
 			};
 
 			relays.update((list) => [newRelay, ...list]);
