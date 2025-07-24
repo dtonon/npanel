@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { sk } from '$lib/store';
 	import { publishRelayList } from '$lib/actions';
@@ -7,9 +7,19 @@
 	import Menu from '$lib/Menu.svelte';
 	import { relays } from '$lib/metadata-store';
 
-	const maxRelays = 5;
+	const maxRelays = 10;
 
 	let saveTimeout: number;
+
+	let scrollContainer;
+	let hasOverflow = false;
+
+	$: if (scrollContainer && relays) {
+		tick().then(() => {
+			hasOverflow = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+		});
+	}
+
 	onMount(async () => {
 		if ($sk.length === 0) {
 			goto('/');
@@ -101,169 +111,176 @@
 					<button class="text-accent hover:underline">Learn more</button> about relays.
 				</div>
 
-				<div class="space-y-3">
-					{#each $relays as relay, index}
-						<div
-							class={`overflow-hidden rounded border-2 ${
-								relay.expanded
-									? 'border-neutral-700 dark:border-neutral-400'
-									: 'border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500'
-							}`}
-						>
-							<!-- Relay Row -->
+				<div class="relative">
+					<div
+						class="max-h-[60vh] space-y-3 overflow-y-scroll pb-8 pr-4"
+						bind:this={scrollContainer}
+					>
+						{#each $relays as relay, index}
 							<div
-								class="flex cursor-pointer items-center justify-between px-4 py-2 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800"
-								on:click={() => toggleRelayExpansion(index)}
-								role="button"
-								tabindex="0"
-								on:keydown={(e) => e.key === 'Enter' && toggleRelayExpansion(index)}
+								class={`overflow-hidden rounded border-2 ${
+									relay.expanded
+										? 'border-neutral-700 dark:border-neutral-400'
+										: 'border-neutral-300 hover:border-neutral-400 dark:border-neutral-600 dark:hover:border-neutral-500'
+								}`}
 							>
-								<div class="flex-1">
-									<div
-										class="text-xl text-black dark:text-white {relay.spec.read || relay.spec.write
-											? 'text-black dark:text-white'
-											: 'text-neutral-400'}"
-									>
-										{relay.spec.url}
-										{#if !relay.spec.read && !relay.spec.write}
-											<svg
-												class="inline h-5 w-5 text-accent"
-												fill="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<circle cx="12" cy="12" r="10"></circle>
-												<path
-													fill="white"
-													d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
-												></path>
-											</svg>
-										{/if}
-									</div>
-								</div>
-
-								<div class="flex items-center space-x-2">
-									<!-- Read -->
-									<button
-										on:click|stopPropagation={() => toggleRelayPermission(index, 'read')}
-										class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
-										title="Toggle read permission"
-									>
-										<div
-											class="h-5 w-5 {relay.spec.read
-												? 'text-black dark:text-white'
-												: 'text-neutral-400'}"
-										>
-											R
-										</div>
-									</button>
-
-									<!-- Write -->
-									<button
-										on:click|stopPropagation={() => toggleRelayPermission(index, 'write')}
-										class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
-										title="Toggle write permission"
-									>
-										<div
-											class="h-5 w-5 {relay.spec.write
-												? 'text-black dark:text-white'
-												: 'text-neutral-400'}"
-										>
-											W
-										</div>
-									</button>
-								</div>
-							</div>
-
-							<!-- Expanded Details -->
-							{#if relay.expanded}
+								<!-- Relay Row -->
 								<div
-									class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:border-neutral-400 dark:bg-neutral-800"
+									class="flex cursor-pointer items-center justify-between px-4 py-2 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800"
+									on:click={() => toggleRelayExpansion(index)}
+									role="button"
+									tabindex="0"
+									on:keydown={(e) => e.key === 'Enter' && toggleRelayExpansion(index)}
 								>
-									<div class="space-y-3">
-										{#if !relay.spec.read && !relay.spec.write}
-											<div class="mb-3 text-sm text-accent">
-												The relay has both Read and Write flags disabled, so it has been removed
-												from the list and it will not be available in the next refresh; enable one
-												or both flags to add it back.
-											</div>
-										{/if}
-										{#if relay.nip11}
-											<div class="text-sm text-neutral-600 dark:text-neutral-400">
-												{#if relay.nip11.name}
-													<div class="mb-1 font-medium text-black dark:text-white">
-														{relay.nip11.name}
-													</div>
-												{/if}
-												{#if relay.nip11.description}
-													<div class="mb-2">{relay.nip11.description}</div>
-												{/if}
-												{#if relay.nip11.supported_nips && relay.nip11.supported_nips.length > 0}
-													<div class="mb-2">
-														<span class="font-medium">NIPs:</span>
-														{relay.nip11.supported_nips.join(', ')}
-													</div>
-												{/if}
-												{#if relay.nip11.software}
-													<div class="mb-2">
-														<span class="font-medium">Software:</span>
-														{relay.nip11.software}
-														{#if relay.nip11.version}
-															v{relay.nip11.version}
-														{/if}
-													</div>
-												{/if}
-												{#if relay.nip11.limitation}
-													<div class="mb-2">
-														<span class="font-medium">Limitations:</span>
-														{#if relay.nip11.limitation.auth_required}
-															Auth required,
-														{/if}
-														{#if relay.nip11.limitation.payment_required}
-															Payment required,
-														{/if}
-														{#if relay.nip11.limitation.max_message_length}
-															Max message: {relay.nip11.limitation.max_message_length}
-														{/if}
-													</div>
-												{/if}
-												{#if relay.nip11.contact}
-													<div>
-														<a
-															href="mailto:{relay.nip11.contact}"
-															class="text-accent hover:underline"
-														>
-															{relay.nip11.contact}
-														</a>
-													</div>
-												{/if}
-											</div>
-										{:else}
-											<div class="text-sm text-neutral-500 dark:text-neutral-400">
-												No relay information available
-											</div>
-										{/if}
-
-										<div class="flex items-center justify-end pt-2">
-											<button
-												on:click={() => removeRelay(index)}
-												class="flex items-center space-x-1 text-sm text-accent transition-colors hover:underline"
-											>
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<div class="flex-1">
+										<div
+											class="text-xl text-black dark:text-white {relay.spec.read || relay.spec.write
+												? 'text-black dark:text-white'
+												: 'text-neutral-400'}"
+										>
+											{relay.spec.url}
+											{#if !relay.spec.read && !relay.spec.write}
+												<svg
+													class="inline h-5 w-5 text-accent"
+													fill="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<circle cx="12" cy="12" r="10"></circle>
 													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-													/>
+														fill="white"
+														d="M12 6a1 1 0 011 1v6a1 1 0 01-2 0V7a1 1 0 011-1zm0 10a1 1 0 100 2 1 1 0 000-2z"
+													></path>
 												</svg>
-												<span>Remove</span>
-											</button>
+											{/if}
 										</div>
 									</div>
+
+									<div class="flex items-center space-x-2">
+										<!-- Read -->
+										<button
+											on:click|stopPropagation={() => toggleRelayPermission(index, 'read')}
+											class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
+											title="Toggle read permission"
+										>
+											<div class="h-5 w-5 {relay.spec.read ? 'text-accent' : 'text-neutral-400'}">
+												R
+											</div>
+										</button>
+
+										<!-- Write -->
+										<button
+											on:click|stopPropagation={() => toggleRelayPermission(index, 'write')}
+											class="rounded p-1 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700"
+											title="Toggle write permission"
+										>
+											<div class="h-5 w-5 {relay.spec.write ? 'text-accent' : 'text-neutral-400'}">
+												W
+											</div>
+										</button>
+									</div>
 								</div>
-							{/if}
-						</div>
-					{/each}
+
+								<!-- Expanded Details -->
+								{#if relay.expanded}
+									<div
+										class="border-t-2 border-neutral-700 bg-neutral-50 p-4 dark:border-neutral-400 dark:bg-neutral-800"
+									>
+										<div class="space-y-3">
+											{#if !relay.spec.read && !relay.spec.write}
+												<div class="mb-3 text-sm text-accent">
+													The relay has both Read and Write flags disabled, so it has been removed
+													from the list and it will not be available in the next refresh; enable one
+													or both flags to add it back.
+												</div>
+											{/if}
+											{#if relay.nip11}
+												<div class="text-sm text-neutral-600 dark:text-neutral-400">
+													{#if relay.nip11.name}
+														<div class="mb-1 font-medium text-black dark:text-white">
+															{relay.nip11.name}
+														</div>
+													{/if}
+													{#if relay.nip11.description}
+														<div class="mb-2">{relay.nip11.description}</div>
+													{/if}
+													{#if relay.nip11.supported_nips && relay.nip11.supported_nips.length > 0}
+														<div class="mb-2">
+															<span class="font-medium">NIPs:</span>
+															{relay.nip11.supported_nips.join(', ')}
+														</div>
+													{/if}
+													{#if relay.nip11.software}
+														<div class="mb-2">
+															<span class="font-medium">Software:</span>
+															{relay.nip11.software}
+															{#if relay.nip11.version}
+																v{relay.nip11.version}
+															{/if}
+														</div>
+													{/if}
+													{#if relay.nip11.limitation}
+														<div class="mb-2">
+															<span class="font-medium">Limitations:</span>
+															{#if relay.nip11.limitation.auth_required}
+																Auth required,
+															{/if}
+															{#if relay.nip11.limitation.payment_required}
+																Payment required,
+															{/if}
+															{#if relay.nip11.limitation.max_message_length}
+																Max message: {relay.nip11.limitation.max_message_length}
+															{/if}
+														</div>
+													{/if}
+													{#if relay.nip11.contact}
+														<div>
+															<a
+																href="mailto:{relay.nip11.contact}"
+																class="text-accent hover:underline"
+															>
+																{relay.nip11.contact}
+															</a>
+														</div>
+													{/if}
+												</div>
+											{:else}
+												<div class="text-sm text-neutral-500 dark:text-neutral-400">
+													No relay information available
+												</div>
+											{/if}
+
+											<div class="flex items-center justify-end pt-2">
+												<button
+													on:click={() => removeRelay(index)}
+													class="flex items-center space-x-1 text-sm text-accent transition-colors hover:underline"
+												>
+													<svg
+														class="h-4 w-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+														/>
+													</svg>
+													<span>Remove</span>
+												</button>
+											</div>
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					{#if hasOverflow}
+						<div
+							class="pointer-events-none absolute bottom-0 left-0 right-4 h-5 bg-gradient-to-t from-white to-transparent dark:from-neutral-800"
+						></div>
+					{/if}
 				</div>
 
 				<!-- Add Relay Button -->
@@ -296,9 +313,8 @@
 						Good, you have reached the maximum number of relays you can add!
 						{#if $relays.length > maxRelays}
 							<span class="text-accent"
-								>To optimize your Nostr experience we suggest removing {$relays.length - maxRelays}
-								{$relays.length - maxRelays > 1 ? 'relays' : 'relay'} and keeping them to a maximum of
-								{maxRelays}.</span
+								>To optimize your Nostr experience we suggest to remove {$relays.length - maxRelays}
+								{$relays.length - maxRelays > 1 ? 'relays' : 'relay'} and keep them to {maxRelays}.</span
 							>
 						{/if}
 					</div>
