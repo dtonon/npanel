@@ -2,10 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { sk, npub } from '$lib/store';
-	import { nip19 } from 'nostr-tools';
-	import { encrypt } from 'nostr-tools/nip49';
+	import * as nip19 from '@nostr/tools/nip19';
+	import { encrypt } from '@nostr/tools/nip49';
 	import TwoColumnLayout from '$lib/TwoColumnLayout.svelte';
 	import Menu from '$lib/Menu.svelte';
+	import { autofocus } from '$lib/utils';
 
 	let backupInitialized = false;
 	let backupPrivKey = '';
@@ -22,7 +23,8 @@
 		if (useEncryption && password) {
 			try {
 				backupPrivKey = encrypt($sk, password);
-			} catch (error) {
+			} catch (err) {
+				console.error('nip49 encrypt error:', err);
 				alert('Error encrypting private key. Please try again.');
 				return;
 			}
@@ -56,10 +58,6 @@
 	function resetBackup() {
 		backupInitialized = false;
 		password = '';
-	}
-
-	function autofocus(node: HTMLElement) {
-		node.focus();
 	}
 </script>
 

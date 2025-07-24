@@ -1,5 +1,5 @@
 {
-	"name": "nportal",
+	"name": "npanel",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -34,9 +34,10 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@0.0.34",
-		"@nostr/tools": "npm:@jsr/nostr__tools@2.15.0",
+		"@fiatjaf/promenade-trusted-dealer": "npm:@jsr/fiatjaf__promenade-trusted-dealer@0.3.1",
+		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@0.0.36",
+		"@nostr/tools": "npm:@jsr/nostr__tools@2.15.1",
 		"detectincognitojs": "^1.5.0",
-		"nostr-tools": "^2.14.3"
+		"hash-wasm": "^4.12.0"
 	}
 }

@@ -3,16 +3,19 @@
 	import { fade, fly } from 'svelte/transition';
 	import { theme, toggleTheme, getEffectiveTheme } from '$lib/theme';
 	import { picture } from '$lib/store';
-	import { clearSession } from '$lib/actions';
+	import { pool } from '@nostr/gadgets/global';
+	import { bunkerEvent, profiles, relays } from './metadata-store';
 
 	export let selectedItem = 'Profile';
 	let showMobileMenu = false;
 
 	$: effectiveTheme = getEffectiveTheme($theme);
 
-	const menuItems = [
+	$: menuItems = [
 		{ id: 'profile', label: 'Profile', path: '/profile' },
-		{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' },
+		...($relays?.filter((r) => r.spec.read).length
+			? [{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' }]
+			: []),
 		{ id: 'relays', label: 'Relays', path: '/relays' },
 		{ id: 'backup', label: 'Backup key', path: '/backup' }
 	];
@@ -24,7 +27,13 @@
 	}
 
 	function handleLogout() {
-		clearSession();
+		// disconnect from all relays because we may have authenticated to any and we must reset that
+		for (let [url] of pool.listConnectionStatus()) {
+			pool.close([url]);
+		}
+		bunkerEvent.set(null);
+		profiles.set([]);
+		sessionStorage.clear();
 		goto('/');
 	}
 

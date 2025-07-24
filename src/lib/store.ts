@@ -1,13 +1,18 @@
 import { writable, type Writable, derived } from 'svelte/store';
-import { nip19, getPublicKey } from 'nostr-tools';
+import { getPublicKey } from '@nostr/tools/pure';
+import * as nip19 from '@nostr/tools/nip19';
 
 export const sk = createSessionWritable<Uint8Array>('sk', new Uint8Array());
 export const picture = createSessionWritable('picture', '');
 
-// Derived store for npub
-export const npub = derived(sk, ($sk) => {
+export const pk = derived(sk, ($sk) => {
 	if ($sk.length === 0) return '';
-	return nip19.npubEncode(getPublicKey($sk));
+	return getPublicKey($sk);
+});
+
+export const npub = derived(pk, ($pk) => {
+	if ($pk.length === 0) return '';
+	return nip19.npubEncode($pk);
 });
 
 // Utility function to persist values in localStorage

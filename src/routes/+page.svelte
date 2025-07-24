@@ -4,8 +4,8 @@
 	import { checkForExtensionsDelayed } from '$lib/checkExtensions';
 	import { detectIncognito } from 'detectincognitojs';
 	import { sk } from '$lib/store';
-	import { nip19 } from 'nostr-tools';
-	import { decrypt } from 'nostr-tools/nip49';
+	import * as nip19 from '@nostr/tools/nip19';
+	import { decrypt } from '@nostr/tools/nip49';
 
 	let isIncognito = false;
 	let extensionsPresent = false;
