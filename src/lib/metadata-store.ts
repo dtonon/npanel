@@ -44,9 +44,16 @@ pk.subscribe(async (pk) => {
 	const items: RelayInfo[] = [];
 	const promises: Promise<void>[] = [];
 	for (let i = 0; i < rl.items.length; i++) {
-		const p = fetchRelayInformation(rl.items[i].url).then((nip11) => {
-			items[i] = { spec: rl.items[i], nip11 };
-		});
+		// Initialize with spec immediately to prevent undefined access
+		items[i] = { spec: rl.items[i] };
+
+		const p = fetchRelayInformation(rl.items[i].url)
+			.then((nip11) => {
+				items[i].nip11 = nip11;
+			})
+			.catch(() => {
+				// NIP-11 fetch failed, but spec is already set
+			});
 		promises.push(p);
 	}
 
