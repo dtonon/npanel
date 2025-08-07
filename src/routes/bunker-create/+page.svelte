@@ -13,6 +13,7 @@
 	import { loadRelayList } from '@nostr/gadgets/lists';
 	import { cleanURL, minePow, signers } from '$lib/utils';
 	import { updateBunker } from '$lib/actions';
+	import { shuffle } from '$lib/utils';
 
 	let bunkerActivating = false;
 	let activationProgress = 0;
@@ -98,7 +99,7 @@
 
 		let intv = setInterval(() => {
 			if (activationProgress < 98) activationProgress++;
-		}, 1000);
+		}, 2500);
 
 		const potentialSigners = advanced ? Array.from(totalSigners) : signers.map((s) => s.pubkey);
 		const signerInboxes = await Promise.all(
@@ -106,6 +107,8 @@
 				loadRelayList(pk).then((rl) => rl.items.filter((r) => r.read).map((r) => r.url))
 			)
 		);
+
+		shuffle(potentialSigners);
 
 		try {
 			let account = await shardGetBunker(
@@ -124,7 +127,9 @@
 					activationProgress = p;
 				},
 				(signer: string, err: string | null) => {
-					console.log('signer', signer, 'err', err);
+					if (err) {
+						console.warn('signer', signer, 'err', err);
+					}
 				}
 			);
 
@@ -154,6 +159,7 @@
 			goto('/bunkers');
 		} catch (err) {
 			console.error(err);
+			alert(err);
 			bunkerActivating = false;
 		}
 
