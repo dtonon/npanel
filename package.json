@@ -35,8 +35,8 @@
 	"type": "module",
 	"dependencies": {
 		"@fiatjaf/promenade-trusted-dealer": "npm:@jsr/fiatjaf__promenade-trusted-dealer@0.4.1",
-		"@nostr/gadgets": "@jsr/nostr__gadgets@0.0.39",
-		"@nostr/tools": "@jsr/nostr__tools@2.16.2",
+		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@^0.0.38",
+		"@nostr/tools": "npm:@jsr/nostr__tools@^2.16.2",
 		"detectincognitojs": "^1.5.0",
 		"hash-wasm": "^4.12.0"
 	}
