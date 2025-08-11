@@ -18,12 +18,26 @@
 	let bunkerActivating = false;
 	let activationProgress = 0;
 	let advanced = false;
-	let totalSigners = new Set(signers.map((s) => s.pubkey));
+	let allSigners = [...signers];
+	let newSignerPubkey = '';
+	let totalSigners = new Set(allSigners.map((s) => s.pubkey));
 	const defaultThreshold = 2;
 	const defaultSelected = 3;
 	const minThreshold = 2;
 	let threshold = defaultThreshold;
 	let total = defaultSelected;
+
+	function addSigner() {
+		if (newSignerPubkey.trim().length === 64) {
+			const pubkey = newSignerPubkey.trim();
+			if (!allSigners.find((s) => s.pubkey === pubkey)) {
+				allSigners = [...allSigners, { pubkey, name: `custom signer ${allSigners.length + 1}` }];
+				totalSigners.add(pubkey);
+				totalSigners = totalSigners;
+				newSignerPubkey = '';
+			}
+		}
+	}
 
 	function toggleSigner(pubkey: string) {
 		if (totalSigners.has(pubkey)) {
@@ -101,7 +115,7 @@
 			if (activationProgress < 98) activationProgress++;
 		}, 2500);
 
-		const potentialSigners = advanced ? Array.from(totalSigners) : signers.map((s) => s.pubkey);
+		const potentialSigners = advanced ? Array.from(totalSigners) : allSigners.map((s) => s.pubkey);
 		const signerInboxes = await Promise.all(
 			potentialSigners.map((pk) =>
 				loadRelayList(pk).then((rl) => rl.items.filter((r) => r.read).map((r) => r.url))
@@ -234,7 +248,7 @@
 						<div class="mt-6">Select the signers you want to use:</div>
 						<div class="mt-4">
 							<div class="space-y-2">
-								{#each signers as signer}
+								{#each allSigners as signer}
 									<CheckboxWithLabel
 										checked={totalSigners.has(signer.pubkey)}
 										onClick={() => toggleSigner(signer.pubkey)}
@@ -242,6 +256,20 @@
 										>{signer.name}</CheckboxWithLabel
 									>
 								{/each}
+							</div>
+							<div class="mt-4 flex items-center">
+								<input
+									type="text"
+									bind:value={newSignerPubkey}
+									placeholder="add a new signer pubkey"
+									class="h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 focus:border-accent focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+								/>
+								<button
+									on:click={addSigner}
+									class="ml-2 rounded-lg bg-accent px-4 py-2 text-white hover:bg-accent/90"
+								>
+									Add
+								</button>
 							</div>
 							<div class="mt-4">
 								{#if totalSigners.size < minThreshold}
