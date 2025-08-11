@@ -2,17 +2,8 @@
 	"name": "npanel",
 	"version": "0.0.1",
 	"private": true,
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
-	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/adapter-static": "^3.0.9",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^3.0.0",
 		"@types/eslint": "^9.6.0",
@@ -35,8 +26,8 @@
 	"type": "module",
 	"dependencies": {
 		"@fiatjaf/promenade-trusted-dealer": "npm:@jsr/fiatjaf__promenade-trusted-dealer@0.4.1",
-		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@^0.0.38",
-		"@nostr/tools": "npm:@jsr/nostr__tools@^2.16.2",
+		"@nostr/gadgets": "npm:@jsr/nostr__gadgets@0.0.38",
+		"@nostr/tools": "npm:@jsr/nostr__tools@2.16.2",
 		"detectincognitojs": "^1.5.0",
 		"hash-wasm": "^4.12.0"
 	}

@@ -1,10 +1,10 @@
+export PATH := "./node_modules/.bin:" + env_var('PATH')
+
 dev:
-  npm run dev -- --force
+  vite dev
 
 build:
-  npm run build
+  vite build
 
 deploy target: build
-  rsync -av --delete --progress build package.json package-lock.json {{target}}:~/npanel/
-  ssh {{target}} 'cd npanel; nvm use; npm ci --omit dev'
-  ssh {{target}} 'systemctl restart npanel'
+  rsync -av --delete --progress build {{target}}:~/npanel/
