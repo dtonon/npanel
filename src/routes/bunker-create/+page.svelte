@@ -26,6 +26,11 @@
 	const minThreshold = 2;
 	let threshold = defaultThreshold;
 	let total = defaultSelected;
+	let relaysReady = false;
+
+	$: if ($relays !== null && $relays.filter((r) => r.spec.read).length > 0) {
+		relaysReady = true;
+	}
 
 	function addSigner() {
 		if (newSignerPubkey.trim().length === 64) {
@@ -100,19 +105,6 @@
 			goto('/');
 			return;
 		}
-
-		// Wait for relays to be loaded
-		return new Promise<void>((resolve) => {
-			const unsubscribe = relays.subscribe((relayList) => {
-				if (relayList !== null) {
-					unsubscribe();
-					if (!relayList.filter((r) => r.spec.read).length) {
-						goto('/relays');
-					}
-					resolve();
-				}
-			});
-		});
 	});
 
 	async function activate(event: Event) {
@@ -230,149 +222,181 @@
 					Set up your bunker infrastructure
 				</h2>
 
-				<div class="mt-6">
-					{#if !advanced}
-						<div class="mt-6">
-							First of all we need to setup the basic configuration of your new FROST
-							(multi-signature) bunker.
-						</div>
-						<div class="mt-6">
-							if you do not choose to customize it (see advanced settings below), this bunker will
-							be created at <span class="italic">{cleanURL($coordinator)}</span>
-							with {defaultSelected} signers, with {defaultThreshold} being required to be online.
-						</div>
-						<div class="mt-6">
-							As soon the bunker will be created, a first main bunker access will be geneated, then
-							you will able to add more bunker accesses, optionally setting also some constranins
-							(expiration and kinds permission).
-						</div>
-					{/if}
+				{#if relaysReady}
+					<div>
+						{#if !advanced}
+							<div class="mt-6">
+								First of all we need to setup the basic configuration of your new FROST
+								(multi-signature) bunker.
+							</div>
+							<div class="mt-6">
+								if you do not choose to customize it (see advanced settings below), this bunker will
+								be created at <span class="italic">{cleanURL($coordinator)}</span>
+								with {defaultSelected} signers, with {defaultThreshold} being required to be online.
+							</div>
+							<div class="mt-6">
+								As soon the bunker will be created, a first main bunker access will be geneated,
+								then you will able to add more bunker accesses, optionally setting also some
+								constranins (expiration and kinds permission).
+							</div>
+						{/if}
 
-					{#if advanced}
-						<div class="mt-2">
-							In this advance mode you can select the signers you want to include in your bunker,
-							choose the N-of-M threshold and also the coordinator server.
-						</div>
-						<div class="mt-6">Select the signers you want to use:</div>
-						<div class="mt-4">
-							<div class="space-y-2">
-								{#each allSigners as signer}
-									<CheckboxWithLabel
-										checked={totalSigners.has(signer.pubkey)}
-										onClick={() => toggleSigner(signer.pubkey)}
-										disabled={totalSigners.size <= threshold && totalSigners.has(signer.pubkey)}
-										>{signer.name}</CheckboxWithLabel
-									>
-								{/each}
+						{#if advanced}
+							<div class="mt-2">
+								In this advance mode you can select the signers you want to include in your bunker,
+								choose the N-of-M threshold and also the coordinator server.
 							</div>
-							<div class="mt-4 flex items-center">
-								<input
-									type="text"
-									bind:value={newSignerPubkey}
-									placeholder="add a new signer pubkey"
-									class="h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 focus:border-accent focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-								/>
-								<button
-									on:click={addSigner}
-									class="ml-2 rounded-lg bg-accent px-4 py-2 text-white hover:bg-accent/90"
-								>
-									Add
-								</button>
-							</div>
+							<div class="mt-6">Select the signers you want to use:</div>
 							<div class="mt-4">
-								{#if totalSigners.size < minThreshold}
-									You need to select at least {minThreshold - totalSigners.size} more {minThreshold -
-										totalSigners.size ===
-									1
-										? 'signer'
-										: 'signers'} to continue.
-								{:else if totalSigners.size == 2 && minThreshold == 2}
-									With 2 signers selected, both signatures will be required.
-								{:else}
-									<div bind:this={advancedButtonContainer}>
-										This bunker will require
-										<button
-											class="threshold-button cursor-pointer text-accent underline hover:no-underline"
-											>{threshold}</button
+								<div class="space-y-2">
+									{#each allSigners as signer}
+										<CheckboxWithLabel
+											checked={totalSigners.has(signer.pubkey)}
+											onClick={() => toggleSigner(signer.pubkey)}
+											disabled={totalSigners.size <= threshold && totalSigners.has(signer.pubkey)}
+											>{signer.name}</CheckboxWithLabel
 										>
-										signatures out of
-										<button
-											class="total-button cursor-pointer text-accent underline hover:no-underline"
-											>{total}</button
-										>
-										total signers to be online.
+									{/each}
+								</div>
+								<div class="mt-4 flex items-center">
+									<input
+										type="text"
+										bind:value={newSignerPubkey}
+										placeholder="add a new signer pubkey"
+										class="h-10 w-full rounded-lg border-2 border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 focus:border-accent focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+									/>
+									<button
+										on:click={addSigner}
+										class="ml-2 rounded-lg bg-accent px-4 py-2 text-white hover:bg-accent/90"
+									>
+										Add
+									</button>
+								</div>
+								<div class="mt-4">
+									{#if totalSigners.size < minThreshold}
+										You need to select at least {minThreshold - totalSigners.size} more {minThreshold -
+											totalSigners.size ===
+										1
+											? 'signer'
+											: 'signers'} to continue.
+									{:else if totalSigners.size == 2 && minThreshold == 2}
+										With 2 signers selected, both signatures will be required.
+									{:else}
+										<div bind:this={advancedButtonContainer}>
+											This bunker will require
+											<button
+												class="threshold-button cursor-pointer text-accent underline hover:no-underline"
+												>{threshold}</button
+											>
+											signatures out of
+											<button
+												class="total-button cursor-pointer text-accent underline hover:no-underline"
+												>{total}</button
+											>
+											total signers to be online.
+										</div>
+									{/if}
+								</div>
+								{#if threshold == total}
+									<div class="mt-2">
+										<strong>Warning</strong>: this scheme is risky, if one of the signers is
+										offline, the events will not be able to be signed.
 									</div>
 								{/if}
 							</div>
-							{#if threshold == total}
-								<div class="mt-2">
-									<strong>Warning</strong>: this scheme is risky, if one of the signers is offline,
-									the events will not be able to be signed.
-								</div>
-							{/if}
-						</div>
 
-						<div class="mt-4">
-							<p class="mb-2">The coordinator server is:</p>
-							<CoordinatorInput />
+							<div class="mt-4">
+								<p class="mb-2">The coordinator server is:</p>
+								<CoordinatorInput />
+							</div>
+						{/if}
+
+						<button
+							class="mt-4 text-left text-sm text-accent underline hover:no-underline"
+							on:click={() => {
+								advanced = !advanced;
+							}}
+						>
+							{advanced ? 'Go back to the default settings' : 'Advanced settings'}
+						</button>
+					</div>
+
+					{#if bunkerActivating}
+						<div>
+							<div class="h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
+								<div
+									class="h-2 rounded-full bg-accent transition-all duration-300 ease-out"
+									style="width: {activationProgress}%"
+								></div>
+							</div>
+							<div class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+								Creating bunker... {activationProgress.toFixed(0)}%
+							</div>
 						</div>
 					{/if}
 
-					<button
-						class="mt-4 text-left text-sm text-accent underline hover:no-underline"
-						on:click={() => {
-							advanced = !advanced;
-						}}
-					>
-						{advanced ? 'Go back to the default settings' : 'Advanced settings'}
-					</button>
-				</div>
+					<div class="flex justify-center sm:justify-end">
+						<button
+							on:click={activate}
+							disabled={bunkerActivating}
+							class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
+								bunkerActivating
+									? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
+									: 'bg-accent text-white hover:bg-accent/90'
+							}`}
+						>
+							<span>
+								{bunkerActivating ? 'Creating bunker...' : 'Set up the bunker'}
+							</span>
+							{#if !bunkerActivating}
+								<div class="ml-4 mr-2">
+									<svg
+										class="h-5 w-5"
+										viewBox="0 0 32 29"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											fill-rule="evenodd"
+											clip-rule="evenodd"
+											d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
+										/>
+									</svg>
+								</div>
+							{/if}
+						</button>
+					</div>
+				{:else}
+					<div>
+						To create a Bunker, and in any case to use Nostr efficiently, you need to have some read
+						relays configured; you can add them in the specific section.
 
-				{#if bunkerActivating}
-					<div class="mt-6">
-						<div class="h-2 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
-							<div
-								class="h-2 rounded-full bg-accent transition-all duration-300 ease-out"
-								style="width: {activationProgress}%"
-							></div>
-						</div>
-						<div class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-							Creating bunker... {activationProgress.toFixed(0)}%
+						<div class="mt-8 flex justify-center sm:justify-end">
+							<button
+								on:click={() => goto('/relays')}
+								class="inline-flex items-center rounded bg-accent px-8 py-3 text-[1.6rem] text-white transition-colors duration-200 sm:text-[1.3rem]"
+							>
+								<span>Configure your relays</span>
+								<div class="ml-4 mr-2">
+									<svg
+										class="h-5 w-5"
+										viewBox="0 0 32 29"
+										fill="none"
+										xmlns="http://www.w3.org/2000/svg"
+									>
+										<path
+											fill="currentColor"
+											fill-rule="evenodd"
+											clip-rule="evenodd"
+											d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
+										/>
+									</svg>
+								</div>
+							</button>
 						</div>
 					</div>
 				{/if}
-			</div>
-			<div class="mt-16 flex justify-center sm:justify-end">
-				<button
-					on:click={activate}
-					disabled={bunkerActivating}
-					class={`inline-flex items-center rounded px-8 py-3 text-[1.6rem] transition-colors duration-200 sm:text-[1.3rem] ${
-						bunkerActivating
-							? 'cursor-not-allowed bg-neutral-400 text-neutral-300'
-							: 'bg-accent text-white hover:bg-accent/90'
-					}`}
-				>
-					<span>
-						{bunkerActivating ? 'Creating bunker...' : 'Set up the bunker'}
-					</span>
-					{#if !bunkerActivating}
-						<div class="ml-4 mr-2">
-							<svg
-								class="h-5 w-5"
-								viewBox="0 0 32 29"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									fill="currentColor"
-									fill-rule="evenodd"
-									clip-rule="evenodd"
-									d="M16.0695 1.17273C16.7448 0.497436 17.8397 0.497436 18.515 1.17273L30.6195 13.2773C31.2948 13.9526 31.2948 15.0475 30.6195 15.7228L18.515 27.8274C17.8397 28.5026 16.7448 28.5026 16.0695 27.8274C15.3942 27.1521 15.3942 26.0571 16.0695 25.3819L25.2221 16.2293H1.72922C0.774208 16.2293 0 15.4551 0 14.5001C0 13.545 0.774208 12.7708 1.72922 12.7708H25.2221L16.0695 3.61823C15.3942 2.94292 15.3942 1.84805 16.0695 1.17273Z"
-								/>
-							</svg>
-						</div>
-					{/if}
-				</button>
 			</div>
 		</div>
 	</div>

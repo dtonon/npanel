@@ -13,9 +13,7 @@
 
 	$: menuItems = [
 		{ id: 'profile', label: 'Profile', path: '/profile' },
-		...($relays?.filter((r) => r.spec.read).length
-			? [{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' }]
-			: []),
+		{ id: 'bunkers', label: 'Bunkers', path: '/bunkers' },
 		{ id: 'relays', label: 'Relays', path: '/relays' },
 		{ id: 'backup', label: 'Backup key', path: '/backup' }
 	];
