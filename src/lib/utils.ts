@@ -12,38 +12,17 @@ export const indexRelays = [
 export const coordinators = ['promenade.fiatjaf.com', 'frostbunker.njump.me'];
 
 export const signers = [
-	// {
-	// 	name: 'fiatjafhome1',
-	// 	pubkey: '77ff8d1f2b88ea5a468036d393beef09dc01b4d770c7d4f0c4198f404aa1ffe2'
-	// },
-	// {
-	// 	name: 'fiatjafhome2',
-	// 	pubkey: '19c048b360209beb47344b45bf581f57c30e603946febf10e03534d81ab8a507'
-	// },
-	// {
-	// 	name: 'fiatjafhome3',
-	// 	pubkey: '97a7491f73155d04f209374b144646e3cb89db25f03146b58c572cd1e2d93567'
-	// },
-
 	{
-		pubkey: '4440e4f93c9dcb0a5521f0bf949a1222698b72a1b1e3534b10537100fc94f97f',
-		name: 'Artur Brugeman'
+		pubkey: '086c222e6ecdcb38f7e42175a1194bc68ba3aefb06cd2a12650c229ca79577b4',
+		name: 'test2'
 	},
 	{
-		pubkey: '23a3ff76766f5ffc852fa6f2fc5058c1306ee25927632e0f8e213af11a5b8de5',
-		name: 'fiatjaf'
+		pubkey: 'ed317ed714a700c454202501cfb14dfb52ba6ea67e8996f10d82aa73d825e313',
+		name: 'test3'
 	},
 	{
-		pubkey: 'aa4f53d8041b88adee44cefb62fb49fdeb85d151d1a346e655850c213508ed2e',
-		name: 'hodlbod'
-	},
-	{
-		pubkey: 'ad1c6fa1daca939685d34ab541fc9e7b450ef6295aa273addafee74a579d57fb',
-		name: 'Sebastix'
-	},
-	{
-		pubkey: '3fcd012e970d9dfba4bc638ae9b6420e2ceca76f3b8e31d0ee3f408023a7c5fd',
-		name: 'Pablo'
+		pubkey: '38df86fa0a59c27117267b75e446eaf58d3a9a561252c4f892ed3155df82826f',
+		name: 'test4'
 	},
 	{
 		pubkey: '4be49a6175734b43c7083ceac11e47bf684ffe65bd021c949bea1702409c119a',

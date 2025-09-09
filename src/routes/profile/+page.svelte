@@ -89,7 +89,7 @@
 		}
 	}
 
-	$: if ($user) {
+	$: if ($user && isLoading) {
 		name = $user.metadata.name || '';
 		$picture = $user.metadata.picture || '';
 		originalPicture = $user.metadata.picture || '';
