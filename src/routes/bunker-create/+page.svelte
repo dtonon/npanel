@@ -101,10 +101,18 @@
 			return;
 		}
 
-		if (!$relays?.filter((r) => r.spec.read).length) {
-			goto('/relays');
-			return;
-		}
+		// Wait for relays to be loaded
+		return new Promise<void>((resolve) => {
+			const unsubscribe = relays.subscribe((relayList) => {
+				if (relayList !== null) {
+					unsubscribe();
+					if (!relayList.filter((r) => r.spec.read).length) {
+						goto('/relays');
+					}
+					resolve();
+				}
+			});
+		});
 	});
 
 	async function activate(event: Event) {
