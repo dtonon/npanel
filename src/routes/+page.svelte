@@ -6,6 +6,7 @@
 	import { sk } from '$lib/store';
 	import * as nip19 from '@nostr/tools/nip19';
 	import { decrypt } from '@nostr/tools/nip49';
+	import { slide } from 'svelte/transition';
 
 	let isIncognito = false;
 	let extensionsPresent = false;
@@ -13,6 +14,12 @@
 	let password = '';
 
 	let showPassword = false;
+
+	let showExplanation = false;
+
+	function toggleExplanation() {
+		showExplanation = !showExplanation;
+	}
 
 	function togglePasswordVisibility() {
 		showPassword = !showPassword;
@@ -216,9 +223,30 @@
 					<!-- Security section -->
 					<div class="text-[1.3rem] leading-7 text-neutral-700 dark:text-neutral-100">
 						<p>
-							Wait, someone told me that I should never put my nsec in a web app, so doing this in
-							NPortal is not so bad? Exactly, <a href="#todo" class="underline">learn why</a>.
+							Wait, someone told me that I should never put my nsec in a web app, so doing this here
+							is not so bad?
+							{#if !showExplanation}
+								Yes, <a href="#todo" class="underline" on:click|preventDefault={toggleExplanation}
+									>learn why</a
+								>
+							{/if}
 						</p>
+
+						{#if showExplanation}
+							<p transition:slide class="mt-2">
+								Usually putting a private key in a web app is discouraged since browsers have a
+								large attack surface given by their complexity and interaction possibilities.
+								Developing this app we are aware of this problematic, but currently there are not
+								alternative ways to manage multi-signature bunkers if not using the private keys
+								directly; in fact web extensions are not able to perform some operations.<br />So we
+								structured the app to be as much secure as possibile, first with some checks that
+								force you to use it in an incognito window, that has a minimal isolation and doesn't
+								persist any data when the session finishes; then we check if any extension is
+								enabled also in incognito and we invite you to disable it, so it cannot snitch your
+								data; finally we don't load any data for third parties, we load only events signed
+								by you, so this hopefully eliminates every XSS-style attack.
+							</p>
+						{/if}
 					</div>
 				{:else}
 					<div class="text-[1.3rem] leading-7 text-neutral-700 dark:text-neutral-100">
