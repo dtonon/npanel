@@ -292,7 +292,7 @@
 
 				<div class="mt-10 text-center text-sm text-neutral-400 dark:text-neutral-500 sm:mt-4">
 					The source code for this service is <a
-						href="https://github.com/dtonon/nstart"
+						href="https://github.com/dtonon/npanel"
 						target="_blank"
 						class="block underline sm:inline">free and open</a
 					>
