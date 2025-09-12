@@ -234,17 +234,17 @@
 
 						{#if showExplanation}
 							<p transition:slide class="mt-2">
-								Usually putting a private key in a web app is discouraged since browsers have a
-								large attack surface given by their complexity and interaction possibilities.
-								Developing this app we are aware of this problematic, but currently there are not
-								alternative ways to manage multi-signature bunkers if not using the private keys
-								directly; in fact web extensions are not able to perform some operations.<br />So we
-								structured the app to be as much secure as possibile, first with some checks that
-								force you to use it in an incognito window, that has a minimal isolation and doesn't
-								persist any data when the session finishes; then we check if any extension is
-								enabled also in incognito and we invite you to disable it, so it cannot snitch your
-								data; finally we don't load any data for third parties, we load only events signed
-								by you, so this hopefully eliminates every XSS-style attack.
+								Storing private keys in web applications is generally discouraged due to browsers'
+								large attack surface, stemming from their complexity and extensive interaction
+								capabilities. While we're aware of this security concern, there are currently no
+								alternative methods for managing multi-signature bunkers without using private keys
+								directly, web extensions cannot perform the necessary operations.<br />
+								To address these risks, we've structured the app with multiple security layers. First,
+								the app enforces usage in an incognito window, which provides minimal isolation and ensures
+								no data persists after the session ends. Second, we check for any extensions enabled
+								in incognito mode and prompt you to disable them, preventing potential data exfiltration.
+								Finally, we avoid loading any third-party data and only load events signed by you, which
+								should eliminate XSS-style attacks.
 							</p>
 						{/if}
 					</div>
