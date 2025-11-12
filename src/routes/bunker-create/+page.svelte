@@ -235,7 +235,7 @@
 								with {defaultSelected} signers, with {defaultThreshold} being required to be online.
 							</div>
 							<div class="mt-6">
-								As soon the bunker will be created, a first main bunker access will be geneated,
+								As soon the bunker will be created, a first main bunker access will be generated,
 								then you will able to add more bunker accesses, optionally setting also some
 								constranins (expiration and kinds permission).
 							</div>

@@ -51,7 +51,10 @@
 			return;
 		}
 
-		if (loginStr.startsWith('ncryptsec')) {
+		if (loginStr.match(/^[0-9a-f]{64}$/)) {
+  		$sk = loginStr
+			goto('/profile');
+		} else if (loginStr.startsWith('ncryptsec')) {
 			if (password === '') {
 				alert('You need to enter a password');
 				return false;
@@ -221,7 +224,7 @@
 					</div>
 
 					<!-- Security section -->
-					<div class="text-[1.3rem] leading-7 text-neutral-700 dark:text-neutral-100">
+					<div class="text-[1.3rem] leading-7 text-neutral-700 dark:text-neutral-100 flex flex-col gap-2">
 						<p>
 							Wait, someone told me that I should never put my nsec in a web app, so doing this here
 							is not so bad?
@@ -233,19 +236,23 @@
 						</p>
 
 						{#if showExplanation}
-							<p transition:slide class="mt-2">
-								Storing private keys in web applications is generally discouraged due to browsers'
-								large attack surface, stemming from their complexity and extensive interaction
-								capabilities. While we're aware of this security concern, there are currently no
-								alternative methods for managing multi-signature bunkers without using private keys
-								directly, web extensions cannot perform the necessary operations.<br />
-								To address these risks, we've structured the app with multiple security layers. First,
-								the app enforces usage in an incognito window, which provides minimal isolation and ensures
-								no data persists after the session ends. Second, we check for any extensions enabled
-								in incognito mode and prompt you to disable them, preventing potential data exfiltration.
-								Finally, we avoid loading any third-party data and only load events signed by you, which
-								should eliminate XSS-style attacks.
-							</p>
+							<div transition:slide class="flex flex-col gap-2">
+  							<p>
+  								Storing private keys in web applications is generally discouraged due to browsers'
+  								large attack surface, stemming from their complexity and extensive interaction
+  								capabilities. While we're aware of this security concern, there are currently no
+  								alternative methods for managing multi-signature bunkers without using private keys
+  								directly, and web extensions cannot perform the necessary operations.
+  							</p>
+  							<p>
+  								To address these risks, we've structured the app with multiple security layers. First,
+  								the app enforces usage in an incognito window, which provides some isolation and ensures
+  								no data persists after the session ends. Second, we check for any extensions enabled
+  								in incognito mode and prompt you to disable them, preventing potential data exfiltration.
+  								Finally, we avoid loading any third-party data and only load events signed by you, which
+  								should eliminate XSS-style attacks.
+  							</p>
+							</div>
 						{/if}
 					</div>
 				{:else}
